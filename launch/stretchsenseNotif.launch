@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+	<node name="ssPosition" type="stretchSenseNotif.py" pkg="stretchsense" output="screen" />
+</launch>
