@@ -66,7 +66,7 @@ TrainingY = [
   # [ 0, -80, -90, -90, -90, -90], #Thumb up 85 deg
   [ 0, -45, -90, -90, -90, 0], #Thumb up, pinky out
   [0, -45, 0, -90, -90, -90],  # Thumb up, index out
-  [0, -45, -90, 0, -90, -90],  # Thumb up, middle out
+  # [0, -45, -90, 0, -90, -90],  # Thumb up, middle out
   # [0, -45, -90, -90, -45, -90],  # Thumb up, ring out
   [ 0, -45, 0, 0, 0, 0], #Open hand
   [ 0, 30, 0, 0, 0, 0], #Tuck thumb
@@ -108,9 +108,9 @@ spp = 200
 size = spp*len(TrainingY)
 X = np.zeros((size,nSensors+1))
 y = np.zeros((size,nOutputs))
-LastX = [0]*5
-mtheta = []
 
+LastX = np.zeros(7)
+mtheta = []
 currentY = []
 
 samplesPerPosition = spp
@@ -166,14 +166,18 @@ class TrainingData:
 
     def Update(self, currentX):
         global LastX, CaptureCalibrationData, X, y, complete, samplesIndex, index, currentY
+
+        compare = currentX == LastX
+
         if len(currentY) == 0:
             currentY = self.getCurrentY(TrainingY)
         if complete:
             return
-        if currentX == LastX:
+        if compare.all():
             return
         else:
             LastX = currentX
+            print('reading %i' % index)
             if CaptureCalibrationData:
                 X[index][0] = 1
                 for i in range(0, nSensors):
