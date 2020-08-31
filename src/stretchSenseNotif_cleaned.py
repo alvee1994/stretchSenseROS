@@ -21,11 +21,6 @@ from stretchsense.msg import ssCap
 
 
 class StretchSenseDelegate(btle.DefaultDelegate):
-
-    """
-    array with decoded cap values
-    """
-
     def __init__(self, params):
         btle.DefaultDelegate.__init__(self)
         self.val = [0,1,2,3]
@@ -35,6 +30,9 @@ class StretchSenseDelegate(btle.DefaultDelegate):
         decimalValue = (binascii.b2a_hex(data))
         splitted = [decimalValue[i:i+4] for i in range(0, len(decimalValue),4)]
         self.val = np.array(list(map(lambda x: int((x),16)/10, splitted)))
+        idx = np.nonzero(self.val)
+        self.val = self.val[idx]
+        # print(self.val)
         SmartGloveSS.capacitance = self.val
 
 class SmartGloveSS():
@@ -43,7 +41,7 @@ class SmartGloveSS():
     Variables to check old calibration data
     """
     haveTheta = False
-    thetafile = "/home/husky/borealis_ws/src/stretchsense/src/theta_ss_zy.csv"
+    thetafile = "/home/husky/borealis_ws/src/stretchsense/src/theta_new.csv"
 
     """
     More Variables
@@ -181,6 +179,12 @@ class SmartGloveSS():
 
         return self.haveTheta
 
+    def loadTheta(self):
+        self.haveTheta = True
+        TrainingData.CaptureCalibrationData = False
+        TrainingData.complete = True
+        theta = pd.read_csv(self.thetafile, sep=',', header=None)
+        self.mtheta = TrainingData.mtheta = theta.values
 
     def digits(self, position):
         # convert to radians for joint state
@@ -209,13 +213,14 @@ class SmartGloveSS():
     def calibrateGlove(self):
         while not self.haveTheta and not rospy.is_shutdown():
             # index of the training segment
-            index = TrainingData.TrainingIndex
+            sensorData = self.readSensors()
             if TrainingData.CaptureCalibrationData == True:
                 old = time.time()
+                index = TrainingData.TrainingIndex
                 d = self.digits(self.trainingY[index])
                 self.publishCap(calibrate=True, digits = d)
-                self.Training.Update(self.readSensors())
-                rospy.loginfo('reading %f' % index)
+                self.Training.Update(sensorData)
+                rospy.loginfo('reading %i' % index)
             elif TrainingData.CaptureCalibrationData == False and TrainingData.complete == False:
                 timeLeft = time.time() - old
                 d = self.digits(self.trainingY[index+1])
@@ -225,13 +230,14 @@ class SmartGloveSS():
                     TrainingData.CaptureCalibrationData = True
             elif TrainingData.complete == True:
                 theta = pd.DataFrame(TrainingData.mtheta)
-                theta.to_csv('theta_new.csv', index = False, header = False)
+                theta.to_csv(self.thetafile, index = False, header = False)
+                print('saved new model')
                 self.haveTheta = True
-
             self.rate.sleep()
 
     def publishCap(self, calibrate = False, digits = []):
         if calibrate == False:
+            self.loadTheta()
             try:
                 while not rospy.is_shutdown():
                     self.Joints.header.seq += 1
@@ -252,7 +258,6 @@ class SmartGloveSS():
         else:
             self.Joints.header.seq += 1
             self.Joints.header.stamp = rospy.Time.now()
-
             self.Joints.position = digits
             self.pubjs.publish(self.Joints)
 
@@ -275,7 +280,7 @@ if __name__ == "__main__":
         else:
             # time to recalibrate
             SmartGlove.calibrateGlove()
-
+            SmartGlove.publishCap()
 
 
 
