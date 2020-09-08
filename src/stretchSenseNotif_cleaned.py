@@ -2,14 +2,12 @@
 
 import time
 import numpy as np
-import signal
 import yaml
 import pandas as pd
 from bluepy import btle
 import binascii
-import csv
 import os.path
-from lib import StretchSense, TrainingData, SolveLeastSquares
+from lib import TrainingData, SolveLeastSquares #, StretchSense
 from bluepy.btle import Scanner, DefaultDelegate
 
 # ROS
@@ -60,7 +58,7 @@ class SmartGloveSS():
         self.Training = TrainingData.TrainingData()
 
         # stretchsense API
-        self.StretchSenseObject = StretchSense.StretchSenseAPI()
+        # self.StretchSenseObject = StretchSense.StretchSenseAPI()
         self.pubjs = rospy.Publisher('/joint_states', JointState, queue_size=2)
         self.Joints = JointState()
         self.Position = ssCap()
