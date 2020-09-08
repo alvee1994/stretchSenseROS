@@ -108,14 +108,17 @@ class SmartGloveSS():
                     print('\t %i. %s' % (i, Gloves[listOfPeripheralsAvailable[i]]))
                 else:
                     print('\t %i. Unknown, addr: %s' % (i, listOfPeripheralsAvailable[i]))
-        else:
-            print('no gloves found')
 
-        selected = int(input('\nSelect from 0 to %i for a glove ' % (len(listOfPeripheralsAvailable) - 1)))
-        addr = listOfPeripheralsAvailable[selected]
-        print('connecting to addr %s' % addr)
-        self.connectOnePeripheral(addr)
-        return True
+            selected = int(input('\nSelect from 0 to %i for a glove ' % (len(listOfPeripheralsAvailable) - 1)))
+            addr = listOfPeripheralsAvailable[selected]
+            print('connecting to addr %s' % addr)
+            self.connectOnePeripheral(addr)
+            return True
+
+        else:
+            print(' No gloves found.\n')
+
+
 
     def connectOnePeripheral(self, addr):
         p = btle.Peripheral(addr, 'random')
@@ -259,6 +262,15 @@ class SmartGloveSS():
             self.Joints.header.stamp = rospy.Time.now()
             self.Joints.position = digits
             self.pubjs.publish(self.Joints)
+
+    # def quitProcess(self):
+    #     print('ending application\n')
+    #     try:
+    #         for p in self.peripheralInUse:
+    #             p.disconnect()
+    #     except:
+    #         print('no gloves were connected\n')
+    #     quit()
 
 
 
