@@ -9,6 +9,7 @@ import binascii
 import os.path
 from lib import TrainingData, SolveLeastSquares #, StretchSense
 from bluepy.btle import Scanner, DefaultDelegate
+import os
 
 # ROS
 import rospy
@@ -39,7 +40,7 @@ class SmartGloveSS():
     Variables to check old calibration data
     """
     haveTheta = False
-    thetafile = "/home/husky/borealis_ws/src/stretchsense/src/theta_new.csv"
+    thetafile = "/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/theta_new.csv"
 
     """
     More Variables
@@ -95,7 +96,7 @@ class SmartGloveSS():
                     listOfPeripheralsAvailable.append(dev.addr)
 
         # get name of known peripherals from yaml file
-        knownPeripherals = open("/home/husky/borealis_ws/src/stretchsense/src/knownPeripherals.yaml")
+        knownPeripherals = open("/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/knownPeripherals.yaml")
         kP = yaml.load(knownPeripherals, Loader=yaml.FullLoader)
         Gloves = kP['Gloves']
 
