@@ -8,3 +8,5 @@ stretchsenseBLE.py
 theta_ss.csv
 theta_ss_zy.csv
 theta.csv
+fingGest.joblib
+*.pyc

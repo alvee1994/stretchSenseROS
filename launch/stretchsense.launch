@@ -3,10 +3,10 @@
 	<node name="ssPosition" type="stretchSenseNotif_cleaned.py" pkg="stretchsense" output="screen" />
 
 	<!-- Parsing xacro and setting robot_description parameter -->
-	<param name="robot_description" command="$(find xacro)/xacro --inorder $(find mastering_ros_robot_description_pkg)/urdf/lefthand_NED.xacro" />
+	<param name="robot_description" command="$(find xacro)/xacro --inorder $(find borealisGlove)/urdf/lefthand_NED.xacro" />
 	<!-- Starting robot state publish which will publish tf -->
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
 	<!-- Launch visualization in rviz -->
-	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find mastering_ros_robot_description_pkg)/urdf.rviz" required="true" />
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find borealisGlove)/urdf.rviz" required="true" />
 
 </launch>

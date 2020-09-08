@@ -22,6 +22,7 @@ Solver = SolveLeastSquares.SolveLeastSquares()
 Training = TrainingData.TrainingData()
 # prefPeri = 'de:9c:60:51:f5:bf'
 handle = 16
+# prefPeri = 'f6:b2:2f:08:b9:48'
 prefPeri = 'F8:A6:1C:CB:ED:A6'
 # change sampling rate to 90Hz
 srate = b'\x5a' #
@@ -47,8 +48,6 @@ def glove_not_found(signum, frame):
     print('Please TURN ON the glove and try again')
     quit()
 
-
-
 def mainBLE():
     global haveTheta, val
     pub = rospy.Publisher('stretchSenseCap_10Channel', ssCap, queue_size=2)
@@ -61,8 +60,6 @@ def mainBLE():
     j = JointState()
 
     trainingY = Training.getTrainingData()
-
-    br = tf.TransformBroadcaster()
 
     def digits(position):
 
