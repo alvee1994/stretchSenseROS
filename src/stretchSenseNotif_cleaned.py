@@ -61,6 +61,7 @@ class SmartGloveSS():
         # stretchsense API
         # self.StretchSenseObject = StretchSense.StretchSenseAPI()
         self.pubjs = rospy.Publisher('/joint_states', JointState, queue_size=2)
+        self.pubfingers = rospy.Publisher('/fingers', ssCap, queue_size=2)
         self.Joints = JointState()
         self.Position = ssCap()
         self.rate = rospy.Rate(200)
@@ -193,6 +194,7 @@ class SmartGloveSS():
         [splay2, thumb, index, middle, ring, pinky] = [p * self.toRad for p in position]
         digits = [splay2, thumb, thumb*0, index, index, index, middle, middle, middle,
                   ring, ring, ring, pinky, pinky, pinky]
+        fingers = [thumb, index, middle, ring, pinky]
 
         for i in range(0, len(digits)):
             if i in [0, 1]:
@@ -203,7 +205,7 @@ class SmartGloveSS():
             elif digits[i] < -1.57:
                 digits[i] = -1.57
 
-        return digits
+        return digits, fingers
 
     def readSensors(self):
         if len(self.peripheralInUse) == 1:
@@ -219,13 +221,13 @@ class SmartGloveSS():
             if TrainingData.CaptureCalibrationData == True:
                 old = time.time()
                 index = TrainingData.TrainingIndex
-                d = self.digits(self.trainingY[index])
+                d, _ = self.digits(self.trainingY[index])
                 self.publishCap(calibrate=True, digits = d)
                 self.Training.Update(sensorData)
                 rospy.loginfo('reading %i' % index)
             elif TrainingData.CaptureCalibrationData == False and TrainingData.complete == False:
                 timeLeft = time.time() - old
-                d = self.digits(self.trainingY[index+1])
+                d, _ = self.digits(self.trainingY[index+1]) # ignore fingers when calibrating
                 self.publishCap(calibrate=True, digits = d)
                 rospy.loginfo('renewing recording in %f' % timeLeft)
                 if timeLeft > 5:
@@ -247,9 +249,11 @@ class SmartGloveSS():
                     sens = self.readSensors()
                     sens = np.insert(sens, 0, 1)
                     transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
-                    digits = self.digits(transformed)
+                    digits, fingers = self.digits(transformed)
                     self.Joints.position = digits
+                    self.Position.values = fingers
                     self.pubjs.publish(self.Joints)
+                    self.pubfingers.publish(self.Position)
                     self.rate.sleep()
             except:
                 print('disconnecting...')

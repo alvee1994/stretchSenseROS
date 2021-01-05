@@ -2,6 +2,10 @@
 <launch>
 	<node name="ssPosition" type="stretchSenseNotif_cleaned.py" pkg="stretchsense" output="screen" />
 
+	<node pkg="vnav" type="vectornav_cleaned.py" name="vnav"/>
+	<node pkg="vnav" type="recognizer_server.py" name="recognizer" output="screen"/>
+	<node name="vnavplot" pkg="rqt_plot" type="rqt_plot" args="/vnavMagnitude/data[2] /vnavMagnitude/data[3] /vnavMagnitude/data[4] /vnavMagnitude/data[5]"/>
+
 	<!-- Parsing xacro and setting robot_description parameter -->
 	<param name="robot_description" command="$(find xacro)/xacro --inorder $(find borealisGlove)/urdf/lefthand_NED.xacro" />
 	<!-- Starting robot state publish which will publish tf -->
