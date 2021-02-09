@@ -9,7 +9,7 @@ import binascii
 import os.path
 from lib import TrainingData, SolveLeastSquares #, StretchSense
 from bluepy.btle import Scanner, DefaultDelegate
-import os
+import os, subprocess, sys
 
 # ROS
 import rospy
@@ -17,7 +17,8 @@ from collections import deque
 from sensor_msgs.msg import JointState
 from stretchsense.msg import ssCap
 
-
+package_directory = subprocess.check_output(["rospack", "find", "stretchsense"])
+package_directory = package_directory.decode().strip('\n')
 
 class StretchSenseDelegate(btle.DefaultDelegate):
     def __init__(self, params):
@@ -40,18 +41,28 @@ class SmartGloveSS():
     Variables to check old calibration data
     """
     haveTheta = False
-    thetafile = "/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/theta_new.csv"
+    thetafile = package_directory + "/src/theta_new.csv"
 
     """
     More Variables
     """
     toRad = 0.01745329251
-
+    fLen = 20
+    fingers = deque(maxlen=fLen)
+    sumFingers = []
+    binFingers = [0,0,0,0,0] # fingers in binary
+    change = deque(maxlen=10)
     """
     the initiated peripheral itself
     """
     peripheralInUse = deque(maxlen=1)
     capacitance = []
+
+    """
+    Glove (left ot right)
+    """
+    hand = 'left'
+    # handedness = {'left': 1, 'right': -1}
 
     def __init__(self):
         # machine learning
@@ -77,7 +88,7 @@ class SmartGloveSS():
                             "ring_prox_inter", "ring_inter_dist", "metacarpal_pinky", "pinky_prox_inter",
                             "pinky_inter_dist"]
 
-    def connectGlove(self):
+    def connectGlove(self, calibrate=True):
         # initiate scanner to scan and filter stretchsense devices with the following parameters
         params = {'hci': 0,
                   'timeout': 4,
@@ -97,35 +108,52 @@ class SmartGloveSS():
                     listOfPeripheralsAvailable.append(dev.addr)
 
         # get name of known peripherals from yaml file
-        knownPeripherals = open("/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/knownPeripherals.yaml")
+        knownPeripherals = open(package_directory + "/src/knownPeripherals.yaml")
         kP = yaml.load(knownPeripherals, Loader=yaml.FullLoader)
-        Gloves = kP['Gloves']
+        Gloves = kP['Gloves'] # all the addresses
+        service = kP['Service'] # BLEservice
 
         # user selects a glove to connect
-        if len(listOfPeripheralsAvailable) > 0:
-            print('Select a glove to connect\n')
+        if len(listOfPeripheralsAvailable) > 0 and calibrate:
+            print('Select a stretchsense glove to connect\n')
             for i in range(len(listOfPeripheralsAvailable)):
                 if listOfPeripheralsAvailable[i] in Gloves.keys():
-                    print('\t %i. %s' % (i, Gloves[listOfPeripheralsAvailable[i]]))
+                    print('\t %i. %s' % (i, Gloves[listOfPeripheralsAvailable[i]][0]))
                 else:
                     print('\t %i. Unknown, addr: %s' % (i, listOfPeripheralsAvailable[i]))
 
             selected = int(input('\nSelect from 0 to %i for a glove ' % (len(listOfPeripheralsAvailable) - 1)))
             addr = listOfPeripheralsAvailable[selected]
-            print('connecting to addr %s' % addr)
-            self.connectOnePeripheral(addr)
-            return True
 
+            """
+            Left or Right hand
+            """
+            if addr in Gloves.keys():
+                self.hand = Gloves[addr][1]
+            else:
+                self.hand = input('Is this a left handed or right handed glove?\n\t(left/right): ')
+
+            rospy.set_param('/hand', self.hand)
+            print('connecting to addr %s' % addr)
+            self.connectOnePeripheral(addr, service)
+            return True
+        elif len(listOfPeripheralsAvailable) > 0 and not calibrate:
+            addr = listOfPeripheralsAvailable[0]
+            self.hand = Gloves[addr][1]
+            rospy.set_param('/hand', self.hand)
+            print('connecting to addr %s' % addr)
+            self.connectOnePeripheral(addr, service)
+            return True
         else:
             print(' No gloves found.\n')
 
 
 
-    def connectOnePeripheral(self, addr):
+    def connectOnePeripheral(self, addr, service):
         p = btle.Peripheral(addr, 'random')
         p.withDelegate(StretchSenseDelegate(p))
         print('connected to %s ' % addr)
-        svc = p.getServiceByUUID('00001701-7374-7265-7563-6873656e7365')
+        svc = p.getServiceByUUID(service)
         char = svc.getCharacteristics()[0]
         handle = char.valHandle
         p.writeCharacteristic(handle + 1, b'\x01\x00')  # turn on notifications
@@ -164,8 +192,8 @@ class SmartGloveSS():
     #     print('connected to %s ' % connected[0])
     #     return True
 
-    def findModel(self):
-        if os.path.isfile(self.thetafile):
+    def findModel(self, calibrate=True):
+        if os.path.isfile(self.thetafile) and calibrate:
             cal = input('Found an old model file. \nCalibrate again? Y/N ')
             if cal in ['Y', 'y']:
                 self.haveTheta = False
@@ -175,6 +203,12 @@ class SmartGloveSS():
                 TrainingData.complete = True
                 theta = pd.read_csv(self.thetafile, sep=',',header=None)
                 self.mtheta = TrainingData.mtheta = theta.values
+        elif not calibrate:
+            self.haveTheta = True
+            TrainingData.CaptureCalibrationData = False
+            TrainingData.complete = True
+            theta = pd.read_csv(self.thetafile, sep=',', header=None)
+            self.mtheta = TrainingData.mtheta = theta.values
         else:
             print('Getting ready to Calibrate in 5 secs')
             time.sleep(5)
@@ -191,21 +225,41 @@ class SmartGloveSS():
 
     def digits(self, position):
         # convert to radians for joint state
-        [splay2, thumb, index, middle, ring, pinky] = [p * self.toRad for p in position]
-        digits = [splay2, thumb, thumb*0, index, index, index, middle, middle, middle,
-                  ring, ring, ring, pinky, pinky, pinky]
-        fingers = [thumb, index, middle, ring, pinky]
+        [splay2, thumb, index, middle, ring, pinky] = np.clip([p * self.toRad for p in position], -1.57, 0)
 
-        for i in range(0, len(digits)):
-            if i in [0, 1]:
-                # digits[i] = digits[i] * -1.0
-                continue
-            if digits[i] > 0:
-                digits[i] = 0
-            elif digits[i] < -1.57:
-                digits[i] = -1.57
 
-        return digits, fingers
+
+        digits = np.array([splay2, thumb, thumb * 0, index, index, index, middle, middle, middle,
+                               ring, ring, ring, pinky, pinky, pinky])
+
+        if self.hand == 'right':
+            print('right hand')
+            digits = -1 * np.flip(digits)
+
+        """
+        The following block creates deque with mean values for individual fingers.
+        The size of the deque is declared in the constructor. 
+        """
+        newest = [thumb, index, middle, ring, pinky]
+        self.fingers.append(newest)
+        if len(self.fingers) == self.fLen:
+            oldest = self.fingers[0]
+            self.sumFingers = self.sumFingers - oldest + newest
+        else:
+            self.sumFingers = np.sum(self.fingers, axis=0) / len(self.fingers)
+
+        older = self.binFingers
+        self.binFingers = np.where(self.sumFingers > -1.0, 1, 0)
+        delta = older - self.binFingers
+        if np.any(delta):
+            self.change.append(delta)
+        """
+        End of the finger block
+        """
+
+        # print(self.change)
+
+        return digits
 
     def readSensors(self):
         if len(self.peripheralInUse) == 1:
@@ -221,37 +275,43 @@ class SmartGloveSS():
             if TrainingData.CaptureCalibrationData == True:
                 old = time.time()
                 index = TrainingData.TrainingIndex
-                d, _ = self.digits(self.trainingY[index])
+                d = self.digits(self.trainingY[index])
                 self.publishCap(calibrate=True, digits = d)
                 self.Training.Update(sensorData)
                 rospy.loginfo('reading %i' % index)
             elif TrainingData.CaptureCalibrationData == False and TrainingData.complete == False:
                 timeLeft = time.time() - old
-                d, _ = self.digits(self.trainingY[index+1]) # ignore fingers when calibrating
+                d = self.digits(self.trainingY[index+1]) # ignore fingers when calibrating
                 self.publishCap(calibrate=True, digits = d)
                 rospy.loginfo('renewing recording in %f' % timeLeft)
                 if timeLeft > 5:
                     TrainingData.CaptureCalibrationData = True
             elif TrainingData.complete == True:
                 theta = pd.DataFrame(TrainingData.mtheta)
-                theta.to_csv(self.thetafile, index = False, header = False)
-                print('saved new model')
+                filename = '/src/' + input('What should I name the new file (without extension)? ') + '.csv'
+                theta.to_csv(filename, index = False, header = False)
+                self.thetafile = filename
+                print('saved new model as %s' % filename)
                 self.haveTheta = True
             self.rate.sleep()
+
+    def prepHeader(self):
+        self.Joints.header.seq += 1
+        self.Joints.header.stamp = self.Position.header.stamp = rospy.Time.now()
+
 
     def publishCap(self, calibrate = False, digits = []):
         if calibrate == False:
             self.loadTheta()
             try:
                 while not rospy.is_shutdown():
-                    self.Joints.header.seq += 1
-                    self.Joints.header.stamp = rospy.Time.now()
+                    self.prepHeader()
                     sens = self.readSensors()
                     sens = np.insert(sens, 0, 1)
                     transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
-                    digits, fingers = self.digits(transformed)
+                    digits = self.digits(transformed)
                     self.Joints.position = digits
-                    self.Position.values = fingers
+                    self.Position.values = self.binFingers
                     self.pubjs.publish(self.Joints)
                     self.pubfingers.publish(self.Position)
                     self.rate.sleep()
@@ -262,8 +322,7 @@ class SmartGloveSS():
                 quit()
                 pass
         else:
-            self.Joints.header.seq += 1
-            self.Joints.header.stamp = rospy.Time.now()
+            self.prepHeader()
             self.Joints.position = digits
             self.pubjs.publish(self.Joints)
 
@@ -288,8 +347,9 @@ if __name__ == "__main__":
 
     # initialize smart glove
     SmartGlove = SmartGloveSS()
-    if SmartGlove.connectGlove():
-        if SmartGlove.findModel():
+    calibrate = True if sys.argv[1] == 'True' else False
+    if SmartGlove.connectGlove(calibrate=calibrate):
+        if SmartGlove.findModel(calibrate=calibrate):
             # Keep the old calibration data
             SmartGlove.publishCap()
         else:

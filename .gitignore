@@ -1,8 +1,7 @@
 drawCap.py
-MoCap.py.ipynb
+*.ipynb
 test.py
 tst.py
-Knitted_Cap.ipynb
 ss.joblib
 stretchsenseBLE.py
 theta_ss.csv

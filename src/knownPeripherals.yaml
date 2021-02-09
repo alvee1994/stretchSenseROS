@@ -1,2 +1,10 @@
 Gloves:
-  f8:a6:1c:cb:ed:a6: Acidalia
+  f8:a6:1c:cb:ed:a6: 
+        - Acidalia
+        - left
+  f6:b2:2f:08:b9:48:
+        - RightGlove
+        - right
+
+Service: 00001701-7374-7265-7563-6873656e7365 # the service containing the characteristic you want to read
+
