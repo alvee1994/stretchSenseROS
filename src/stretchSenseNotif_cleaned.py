@@ -40,7 +40,7 @@ class SmartGloveSS():
     Variables to check old calibration data
     """
     haveTheta = False
-    thetafile = "/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/theta_new.csv"
+    thetafile = "/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/sam_theta.csv"
 
     """
     More Variables
@@ -234,6 +234,8 @@ class SmartGloveSS():
                     TrainingData.CaptureCalibrationData = True
             elif TrainingData.complete == True:
                 theta = pd.DataFrame(TrainingData.mtheta)
+                newfile = "/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/theta_" + str(rospy.Time.now()) + ".csv"
+                self.thetafile = newfile
                 theta.to_csv(self.thetafile, index = False, header = False)
                 print('saved new model')
                 self.haveTheta = True
