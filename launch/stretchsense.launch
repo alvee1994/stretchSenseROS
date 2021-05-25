@@ -7,10 +7,10 @@
 <!--	<node name="vnavplot" pkg="rqt_plot" type="rqt_plot" args="/vnavMagnitude/data[2] /vnavMagnitude/data[3] /vnavMagnitude/data[4] /vnavMagnitude/data[5]"/>-->
 
 	<!-- Parsing xacro and setting robot_description parameter -->
-	<param name="robot_description" command="$(find xacro)/xacro --inorder $(find borealisGlove)/urdf/lefthand_NED.xacro" />
+	<param name="robot_description" command="$(find xacro)/xacro --inorder $(find stretchsense)/urdf/lefthand_NED.xacro" />
 	<!-- Starting robot state publish which will publish tf -->
-	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 	<!-- Launch visualization in rviz -->
-	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find borealisGlove)/urdf.rviz" required="true" />
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find stretchsense)/urdf/urdf.rviz" required="true" />
 
 </launch>

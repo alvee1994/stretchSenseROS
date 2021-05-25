@@ -12,11 +12,12 @@ from bluepy.btle import Scanner, DefaultDelegate
 import os
 
 # ROS
-import rospy
+import rospy, rospkg
 from collections import deque
 from sensor_msgs.msg import JointState
 from stretchsense.msg import ssCap
 
+rospack = rospkg.RosPack()
 
 
 class StretchSenseDelegate(btle.DefaultDelegate):
@@ -40,8 +41,8 @@ class SmartGloveSS():
     Variables to check old calibration data
     """
     haveTheta = False
-    thetafile = "/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/sam_theta.csv"
-
+    package_directory = rospack.get_path('stretchsense')
+    thetafile = package_directory + "/src/sam_theta.csv"
     """
     More Variables
     """
@@ -97,7 +98,7 @@ class SmartGloveSS():
                     listOfPeripheralsAvailable.append(dev.addr)
 
         # get name of known peripherals from yaml file
-        knownPeripherals = open("/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/knownPeripherals.yaml")
+        knownPeripherals = open(self.package_directory + "/src/knownPeripherals.yaml")
         kP = yaml.load(knownPeripherals, Loader=yaml.FullLoader)
         Gloves = kP['Gloves']
 
