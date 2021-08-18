@@ -7,8 +7,7 @@ import pandas as pd
 from bluepy import btle
 import binascii
 import os.path
-from lib import TrainingData, SolveLeastSquares #, StretchSense
-from bluepy.btle import Scanner, DefaultDelegate
+from lib import TrainingData, SolveLeastSquares
 import os
 
 # ROS
@@ -23,26 +22,24 @@ rospack = rospkg.RosPack()
 class StretchSenseDelegate(btle.DefaultDelegate):
     def __init__(self, params):
         btle.DefaultDelegate.__init__(self)
-        self.val = [0,1,2,3]
-
+        self.val = [0, 1, 2, 3]
 
     def handleNotification(self, cHandle, data):
         decimalValue = (binascii.b2a_hex(data))
-        splitted = [decimalValue[i:i+4] for i in range(0, len(decimalValue),4)]
-        self.val = np.array(list(map(lambda x: int((x),16)/10, splitted)))
+        splitted = [decimalValue[i:i + 4] for i in range(0, len(decimalValue), 4)]
+        self.val = np.array(list(map(lambda x: int((x), 16) / 10, splitted)))
         idx = np.nonzero(self.val)
         self.val = self.val[idx]
-        # print(self.val)
         SmartGloveSS.capacitance = self.val
 
-class SmartGloveSS():
 
+class SmartGloveSS:
     """
     Variables to check old calibration data
     """
     haveTheta = False
     package_directory = rospack.get_path('stretchsense')
-    thetafile = package_directory + "/src/sam_theta.csv"
+    thetafile = package_directory + "/src/data/sam_theta.csv"
     """
     More Variables
     """
@@ -71,12 +68,13 @@ class SmartGloveSS():
         self.trainingY = self.Training.getTrainingData()
 
         self.Joints.header.frame_id = "ssFingers"
-        self.Joints.name = ["metacarpal_thumb_splay_2", "thumb_meta_prox",
-                            "thumb_prox_inter", "metacarpal_index", "index_prox_inter", "index_inter_dist",
-                            "metacarpal_middle", "middle_prox_inter", "middle_inter_dist",
-                            "metacarpal_ring",
-                            "ring_prox_inter", "ring_inter_dist", "metacarpal_pinky", "pinky_prox_inter",
-                            "pinky_inter_dist"]
+        self.Joints.name = ["left_" + string for string in ["metacarpal_thumb_splay_2", "thumb_meta_prox",
+                                                            "thumb_prox_inter", "metacarpal_index", "index_prox_inter",
+                                                            "index_inter_dist", "metacarpal_middle",
+                                                            "middle_prox_inter",
+                                                            "middle_inter_dist", "metacarpal_ring",
+                                                            "ring_prox_inter", "ring_inter_dist", "metacarpal_pinky",
+                                                            "pinky_prox_inter", "pinky_inter_dist"]]
 
     def connectGlove(self):
         # initiate scanner to scan and filter stretchsense devices with the following parameters
@@ -88,7 +86,7 @@ class SmartGloveSS():
                   'new': True,
                   'verbose': True}
 
-        scanner = Scanner().withDelegate(StretchSenseDelegate(params))
+        scanner = btle.Scanner().withDelegate(StretchSenseDelegate(params))
         devices = scanner.scan(3)
         listOfPeripheralsAvailable = []
 
@@ -98,7 +96,7 @@ class SmartGloveSS():
                     listOfPeripheralsAvailable.append(dev.addr)
 
         # get name of known peripherals from yaml file
-        knownPeripherals = open(self.package_directory + "/src/knownPeripherals.yaml")
+        knownPeripherals = open(self.package_directory + "/src/data/knownPeripherals.yaml")
         kP = yaml.load(knownPeripherals, Loader=yaml.FullLoader)
         Gloves = kP['Gloves']
 
@@ -120,8 +118,6 @@ class SmartGloveSS():
         else:
             print(' No gloves found.\n')
 
-
-
     def connectOnePeripheral(self, addr):
         p = btle.Peripheral(addr, 'random')
         p.withDelegate(StretchSenseDelegate(p))
@@ -133,38 +129,6 @@ class SmartGloveSS():
         p.writeCharacteristic(29, b'\x5a')  # change sampling rate to 90Hz
         self.peripheralInUse.append(p)
 
-    # def connectGlove(self):
-    #     # scan for Stretch Sense products for 5 seconds
-    #     self.StretchSenseObject.ble_scanning(5)
-    #
-    #     # list of available peripherals
-    #     availablePeri = self.StretchSenseObject.ble_getListPeripheralAvailable()
-    #     avail_peris = [peri.addr for peri in availablePeri[1:]]
-    #
-    #     # get name of known peripherals from yaml file
-    #     knownPeripherals = open("/home/husky/borealis_ws/src/stretchsense/src/knownPeripherals.yaml")
-    #     kP = yaml.load(knownPeripherals, Loader=yaml.FullLoader)
-    #     Gloves = kP['Gloves']
-    #
-    #     # user selects a glove to connect
-    #     if len(avail_peris) > 0:
-    #         print('Select a glove to connect\n')
-    #         for i in range(len(avail_peris)):
-    #             if avail_peris[i] in Gloves.keys():
-    #                 print('\t %i. %s' % (i, Gloves[avail_peris[i]]))
-    #             else:
-    #                 print('\t %i. Unknown, addr: %s' % (i, avail_peris[i]))
-    #     else:
-    #         print('no gloves found')
-    #
-    #     selected = int(input('\nSelect from 0 to %i for a glove ' % (len(avail_peris) - 1)))
-    #     addr = avail_peris[selected]
-    #     print('connecting to addr %s' % addr)
-    #     self.StretchSenseObject.ble_connectOnePeripheral(addr)
-    #     connected = list(set([c.addr for c in self.StretchSenseObject.listPeripheralIsConnected]))
-    #     print('connected to %s ' % connected[0])
-    #     return True
-
     def findModel(self):
         if os.path.isfile(self.thetafile):
             cal = input('Found an old model file. \nCalibrate again? Y/N ')
@@ -174,7 +138,7 @@ class SmartGloveSS():
                 self.haveTheta = True
                 TrainingData.CaptureCalibrationData = False
                 TrainingData.complete = True
-                theta = pd.read_csv(self.thetafile, sep=',',header=None)
+                theta = pd.read_csv(self.thetafile, sep=',', header=None)
                 self.mtheta = TrainingData.mtheta = theta.values
         else:
             print('Getting ready to Calibrate in 5 secs')
@@ -193,7 +157,7 @@ class SmartGloveSS():
     def digits(self, position):
         # convert to radians for joint state
         [splay2, thumb, index, middle, ring, pinky] = [p * self.toRad for p in position]
-        digits = [splay2, thumb, thumb*0, index, index, index, middle, middle, middle,
+        digits = [splay2, thumb, thumb * 0, index, index, index, middle, middle, middle,
                   ring, ring, ring, pinky, pinky, pinky]
         fingers = [thumb, index, middle, ring, pinky]
 
@@ -223,26 +187,26 @@ class SmartGloveSS():
                 old = time.time()
                 index = TrainingData.TrainingIndex
                 d, _ = self.digits(self.trainingY[index])
-                self.publishCap(calibrate=True, digits = d)
+                self.publishCap(calibrate=True, digits=d)
                 self.Training.Update(sensorData)
                 rospy.loginfo('reading %i' % index)
             elif TrainingData.CaptureCalibrationData == False and TrainingData.complete == False:
                 timeLeft = time.time() - old
-                d, _ = self.digits(self.trainingY[index+1]) # ignore fingers when calibrating
-                self.publishCap(calibrate=True, digits = d)
+                d, _ = self.digits(self.trainingY[index + 1])  # ignore fingers when calibrating
+                self.publishCap(calibrate=True, digits=d)
                 rospy.loginfo('renewing recording in %f' % timeLeft)
                 if timeLeft > 5:
                     TrainingData.CaptureCalibrationData = True
             elif TrainingData.complete == True:
                 theta = pd.DataFrame(TrainingData.mtheta)
-                newfile = "/home/" + os.getlogin() + "/borealis_ws/src/stretchsense/src/theta_" + str(rospy.Time.now()) + ".csv"
+                newfile = self.package_directory + "/src/data/theta_" + str(rospy.Time.now()) + ".csv"
                 self.thetafile = newfile
-                theta.to_csv(self.thetafile, index = False, header = False)
+                theta.to_csv(self.thetafile, index=False, header=False)
                 print('saved new model')
                 self.haveTheta = True
             self.rate.sleep()
 
-    def publishCap(self, calibrate = False, digits = []):
+    def publishCap(self, calibrate=False, digits=[]):
         if calibrate == False:
             self.loadTheta()
             try:
@@ -280,10 +244,15 @@ class SmartGloveSS():
     #     quit()
 
 
-
-
-
-
+"""
+Procedure:
+1. Find all gloves
+2. Connect to found glove
+3. Data:
+        a. train if data doesnt exist for user
+        b. use existing data
+4. 
+"""
 
 if __name__ == "__main__":
     # initiate node
@@ -299,10 +268,3 @@ if __name__ == "__main__":
             # time to recalibrate
             SmartGlove.calibrateGlove()
             SmartGlove.publishCap()
-
-
-
-
-
-
-

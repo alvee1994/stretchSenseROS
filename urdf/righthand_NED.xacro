@@ -1,0 +1,455 @@
+<?xml version="1.0" ?>
+
+<robot name = "righthand" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- Include Materials -->
+    <material name="Black">
+        <color rgba="0.0 0.0 0.0 1.0"/>
+    </material>
+
+    <material name="Red">
+        <color rgba="0.8 0.0 0.0 1.0"/>
+    </material>
+
+    <material name="White">
+        <color rgba="1.0 1.0 1.0 1.0"/>
+    </material>
+
+    <!--constants-->
+    <xacro:property name="deg_to_rad" value="0.01745329251994329577"/>
+    <xacro:property name="M_SCALE" value="0.001 0.001 0.001"/>
+    <xacro:property name="M_PI" value="3.14159"/>
+    <xacro:property name="rpy" value="1.57 0 1.57"/>
+
+    <!-- Carpals Box -->
+    <xacro:property name="c_l" value="0.0437" />
+    <xacro:property name="c_b" value="0.025" />
+    <xacro:property name="c_h" value="0.02" />
+
+    <!-- Metacarpals Box-->
+    <xacro:property name="x_origin" value="0.5" />
+    <xacro:property name="metc_l" value="0.16" />
+    <xacro:property name="metc_b" value="0.025" />
+    <xacro:property name="metc_h" value="0.0837" />
+
+
+    <!-- Proximal -->
+    <xacro:property name="proxlen" value="0.036"/>
+    <xacro:property name="proxrad" value="0.010"/>
+    <!-- Intermediate -->
+    <xacro:property name="interlen" value="0.032"/>
+    <xacro:property name="interrad" value="0.010"/>
+    <!-- Distal -->
+    <xacro:property name="distlen" value="0.040"/>
+    <xacro:property name="distrad" value="0.010"/>
+
+
+
+    <xacro:macro name="inertial_matrix" params="mass">
+        <inertial>
+            <mass value="${mass}"/>
+            <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="0.5" iyz="0.0" izz="1.0" />
+        </inertial>
+    </xacro:macro>
+
+    <xacro:macro name="transmission_block" params="joint_name">
+        <transmission name="tran1">
+            <type>transmission_interface/SimpleTransmission</type>
+            <joint name="${joint_name}">
+    	      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+            </joint>
+            <actuator name="motor1">
+                <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>
+            </actuator>
+        </transmission>
+    </xacro:macro>
+
+    <!-- /////////////////////////////////////////////////////////////////////////////// -->
+    <!-- JOINTS AND LINKS -->
+<!--    -->
+    <link name="metacarpal">
+        <visual>
+            <origin xyz="${x_origin+0.05185} 0 0" rpy="${rpy}"/>
+            <geometry>
+                <box size="${metc_l} ${metc_b} ${metc_h}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+<!--        <xacro:inertial_matrix mass="1"/>-->
+    </link>
+
+    <gazebo reference="metacarpal">
+        <material>Gazebo/Black</material>
+    </gazebo>
+    <!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+
+
+     <!-- THUMB FINGER PROXIMAL-->
+
+    <joint name="metacarpal_thumb_splay_2" type="continuous">
+        <origin xyz="${x_origin+0.06} 0.08 0.0125" rpy="-1.57 0 0"/>
+        <parent link="metacarpal"/>
+        <child link="thumb_p_splay2"/>
+        <axis xyz="0 0 1"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+
+    <link name="thumb_p_splay2"></link>  <!-- SPLAY 2 LINK -->
+
+
+    <!-- THUMB FINGER PROXIMAL-->
+    <joint name="thumb_meta_prox" type="continuous">
+        <origin xyz="${x_origin} 0 0" rpy="0 0 0"/>
+        <parent link="thumb_p_splay2"/>
+        <child link="thumb_p"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+
+
+    <link name="thumb_p">
+        <visual>
+            <origin xyz="${x_origin+0.018} 0 0" rpy="1.57 0 1.57"/>
+            <geometry>
+                <cylinder radius="${proxrad}" length="${proxlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+
+    <!-- THUMB FINGER INTERMEDIATE-->
+    <joint name="thumb_prox_inter" type="continuous">
+        <origin xyz="${x_origin+proxlen} 0 0" rpy="0 0 0"/>
+        <parent link="thumb_p"/>
+        <child link="thumb_i"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+
+    <link name="thumb_i">
+        <visual>
+            <origin xyz="${x_origin+0.018} 0 0" rpy="0 1.57 0"/>
+            <geometry>
+                <cylinder radius="${interrad}" length="${interlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+
+<!-- THUMB END -->
+
+
+
+
+
+
+
+    <!-- INDEX FINGER PROXIMAL-->
+    <joint name="metacarpal_index" type="continuous">
+        <origin xyz="${x_origin+0.0937} 0 0" rpy="0 0 0"/>
+        <parent link="metacarpal"/>
+        <child link="index_p"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="index_p">
+        <visual>
+            <origin xyz="${x_origin+0.018} 0.055 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${proxrad}" length="${proxlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+
+    <!-- INDEX FINGER INTERMEDIATE-->
+    <joint name="index_prox_inter" type="continuous">
+        <origin xyz="${x_origin+proxlen} 0 0" rpy="0 0 0"/>
+        <parent link="index_p"/>
+        <child link="index_i"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="index_i">
+        <visual>
+            <origin xyz="${x_origin+0.016} 0.055 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${interrad}" length="${interlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+    <!-- INDEX FINGER DISTAL-->
+    <joint name="index_inter_dist" type="continuous">
+        <origin xyz="${x_origin+interlen} 0 0" rpy="0 0 0"/>
+        <parent link="index_i"/>
+        <child link="index_d"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="index_d">
+        <visual>
+            <origin xyz="${x_origin+0.020} 0.055 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${distrad}" length="${distlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+
+
+    <!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- MIDDLE FINGER PROXIMAL-->
+    <joint name="metacarpal_middle" type="continuous">
+        <origin xyz="${x_origin+0.0937} 0 0" rpy="0 0 0"/>
+        <parent link="metacarpal"/>
+        <child link="middle_p"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="middle_p">
+        <visual>
+            <origin xyz="${x_origin+0.018} 0.0225 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${proxrad}" length="${proxlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+
+    <!-- MIDDLE FINGER INTERMEDIATE-->
+    <joint name="middle_prox_inter" type="continuous">
+        <origin xyz="${x_origin+proxlen} 0 0" rpy="0 0 0"/>
+        <parent link="middle_p"/>
+        <child link="middle_i"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="middle_i">
+        <visual>
+            <origin xyz="${x_origin+0.016} 0.0225 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${interrad}" length="${interlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+    <!-- MIDDLE FINGER DISTAL-->
+    <joint name="middle_inter_dist" type="continuous">
+        <origin xyz="${x_origin+interlen} 0 0" rpy="0 0 0"/>
+        <parent link="middle_i"/>
+        <child link="middle_d"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="middle_d">
+        <visual>
+            <origin xyz="${x_origin+0.025} 0.0225 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${distrad}" length="${distlen + 0.01}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+
+    <!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- RING FINGER PROXIMAL-->
+    <joint name="metacarpal_ring" type="continuous">
+        <origin xyz="${x_origin+0.0937} 0 0" rpy="0 0 0"/>
+        <parent link="metacarpal"/>
+        <child link="ring_p"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="ring_p">
+        <visual>
+            <origin xyz="${x_origin+0.018} -0.0225 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${proxrad}" length="${proxlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+
+    <!-- RING FINGER INTERMEDIATE-->
+    <joint name="ring_prox_inter" type="continuous">
+        <origin xyz="${x_origin+proxlen} 0 0" rpy="0 0 0"/>
+        <parent link="ring_p"/>
+        <child link="ring_i"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="ring_i">
+        <visual>
+            <origin xyz="${x_origin+0.016} -0.0225 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${interrad}" length="${interlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+    <!-- RING FINGER DISTAL-->
+    <joint name="ring_inter_dist" type="continuous">
+        <origin xyz="${x_origin+interlen} 0 0" rpy="0 0 0"/>
+        <parent link="ring_i"/>
+        <child link="ring_d"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="ring_d">
+        <visual>
+            <origin xyz="${x_origin+0.020} -0.0225 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${distrad}" length="${distlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+
+
+    <!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- PINKY FINGER PROXIMAL-->
+    <joint name="metacarpal_pinky" type="continuous">
+        <origin xyz="${x_origin+0.0937} 0 0" rpy="0 0 0"/>
+        <parent link="metacarpal"/>
+        <child link="pinky_p"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="pinky_p">
+        <visual>
+            <origin xyz="${x_origin+0.018} -0.055 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${proxrad}" length="${proxlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+
+    <!-- PINKY FINGER INTERMEDIATE-->
+    <joint name="pinky_prox_inter" type="continuous">
+        <origin xyz="${x_origin+proxlen} 0 0" rpy="0 0 0"/>
+        <parent link="pinky_p"/>
+        <child link="pinky_i"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="pinky_i">
+        <visual>
+            <origin xyz="${x_origin+0.016} -0.055 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${interrad}" length="${interlen}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+    <!-- PINKY FINGER DISTAL-->
+    <joint name="pinky_inter_dist" type="continuous">
+        <origin xyz="${x_origin+interlen} 0 0" rpy="0 0 0"/>
+        <parent link="pinky_i"/>
+        <child link="pinky_d"/>
+        <axis xyz="0 1 0"/>
+        <!--        <limit effort="300" velocity="1" lower="-1.57" upper="0" />-->
+        <dynamics damping="50" friction="1"/>
+    </joint>
+    <link name="pinky_d">
+        <visual>
+            <origin xyz="${x_origin+0.015} -0.055 0" rpy="${rpy}"/>
+            <geometry>
+                <cylinder radius="${distrad}" length="${distlen-0.01}"/>
+            </geometry>
+            <material name="White"/>
+        </visual>
+
+
+        <xacro:inertial_matrix mass="1"/>
+    </link>
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+
+
+
+
+
+  <!-- Transmissions for ROS Control -->
+<!--    <xacro:transmission_block joint_name="carpal_metacarpal_roll"/>-->
+<!--    <xacro:transmission_block joint_name="carpal_metacarpal_pitch"/>-->
+<!--    <xacro:transmission_block joint_name="carpal_metacarpal_yaw"/>-->
+
+    <xacro:transmission_block joint_name="metacarpal_index"/>
+    <xacro:transmission_block joint_name="index_prox_inter"/>
+    <xacro:transmission_block joint_name="index_inter_dist"/>
+    <xacro:transmission_block joint_name="metacarpal_middle"/>
+    <xacro:transmission_block joint_name="middle_prox_inter"/>
+    <xacro:transmission_block joint_name="middle_inter_dist"/>
+
+    <xacro:transmission_block joint_name="metacarpal_ring"/>
+    <xacro:transmission_block joint_name="ring_prox_inter"/>
+    <xacro:transmission_block joint_name="ring_inter_dist"/>
+    <xacro:transmission_block joint_name="metacarpal_pinky"/>
+    <xacro:transmission_block joint_name="pinky_prox_inter"/>
+    <xacro:transmission_block joint_name="pinky_inter_dist"/>
+
+
+    <xacro:transmission_block joint_name="metacarpal_thumb_splay_1"/>
+    <xacro:transmission_block joint_name="metacarpal_thumb_splay_2"/>
+    <xacro:transmission_block joint_name="metacarpal_thumb"/>
+    <xacro:transmission_block joint_name="thumb_prox_inter"/>
+
+
+ <!-- ros_control plugin -->
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/righthand</robotNamespace>
+    </plugin>
+  </gazebo>
+
+
+</robot>
