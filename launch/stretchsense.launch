@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-	<node name="stretchsenseCAP" type="SmartGloveHandler.py" pkg="stretchsense" output="screen" />
+
+	<group ns = "stretchsense">
+		<node name="stretchsenseCAP" type="SmartGloveHandler.py" pkg="stretchsense" output="screen" />
+	</group>
+
 
 <!--	<node pkg="vnav" type="vectornav_cleaned.py" name="vnav"/>-->
 <!--	<node pkg="vnav" type="recognizer_server.py" name="recognizer" output="screen"/>-->
