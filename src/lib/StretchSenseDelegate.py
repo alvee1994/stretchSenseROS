@@ -5,6 +5,7 @@ import time
 import rospy
 import numpy as np
 import pandas as pd
+import threading
 import binascii
 from bluepy import btle
 from sensor_msgs.msg import JointState
@@ -16,7 +17,7 @@ from lib import TrainingData, SolveLeastSquares
 
 class StretchSenseDelegate(btle.DefaultDelegate):
     def __init__(self, params):
-        btle.DefaultDelegate.__init__(self)
+        super().__init__()
 
         self.capacitance = []
         self.toRad = 0.01745329251
@@ -33,10 +34,6 @@ class StretchSenseDelegate(btle.DefaultDelegate):
                                                             "middle_inter_dist", "metacarpal_ring",
                                                             "ring_prox_inter", "ring_inter_dist", "metacarpal_pinky",
                                                             "pinky_prox_inter", "pinky_inter_dist"]]
-
-        # for a gesture recognizer to subscribe to
-        # self.pubfingers = rospy.Publisher('/fingers', ssCap, queue_size=2)
-        # self.Position = ssCap()
 
         # linear algebra
         self.Solver = SolveLeastSquares.SolveLeastSquares()
@@ -86,7 +83,6 @@ class StretchSenseDelegate(btle.DefaultDelegate):
         self.Training.setTheta(theta)
 
     def calibrateSensors(self, callback):
-        while not self.trainingDone and not rospy.is_shutdown():
             callback()
             if self.Training.CaptureCalibrationData:
                 self.old = time.time()
@@ -105,15 +101,12 @@ class StretchSenseDelegate(btle.DefaultDelegate):
             elif self.Training.complete:
                 self.mtheta = self.Training.mtheta
                 self.trainingDone = True
-            self.rate.sleep()
-
-        print("Calibration complete")
-        return self.mtheta
+                print("Calibration complete")
+                return self.mtheta
 
     def publishCapacitance(self, callback=None, calibrate=False, digits=np.array([])):
-        if not calibrate:
-            try:
-                while not rospy.is_shutdown():
+        try:
+            if not calibrate:
                     callback()
                     sensor_values = self.applyTransformation()
                     digits, _ = self.degToRads(sensor_values)
@@ -122,11 +115,11 @@ class StretchSenseDelegate(btle.DefaultDelegate):
                     self.Joints.header.stamp = rospy.Time.now()
                     self.Joints.position = digits
                     self.pub.publish(self.Joints)
-                    self.rate.sleep()
-            except:
-                pass
-        else:
-            self.Joints.header.seq += 1
-            self.Joints.header.stamp = rospy.Time.now()
-            self.Joints.position = digits
-            self.pub.publish(self.Joints)
+            else:
+                self.Joints.header.seq += 1
+                self.Joints.header.stamp = rospy.Time.now()
+                self.Joints.position = digits
+                self.pub.publish(self.Joints)
+        except Exception as e:
+            print(f'Raised an exception: {e}')
+            pass

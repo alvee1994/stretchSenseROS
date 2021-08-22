@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   sensor_msgs
+  genmsg
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -48,12 +50,11 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
- add_message_files(
-   FILES
-   ssCap.msg
+# add_message_files(
+#   FILES
 #  Message1.msg
 #  Message2.msg
- )
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -63,17 +64,17 @@ catkin_python_setup()
 # )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+    FILES
+    smartGloveServer.action
+)
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
    std_msgs
    sensor_msgs
+   actionlib_msgs
  )
 
 ################################################

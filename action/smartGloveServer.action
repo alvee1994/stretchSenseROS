@@ -1,0 +1,8 @@
+# Define the goal
+string[] goal  # Specify what the goal is
+---
+# Define the result
+string[] result  # list of devices or true if connected
+---
+# Define a feedback message
+string feedback  # used to show scanning

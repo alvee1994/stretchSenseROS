@@ -10,7 +10,6 @@ import os
 from lib.StretchSenseDelegate import StretchSenseDelegate
 # from lib import TrainingData, SolveLeastSquares
 
-
 class SmartGloveHandler:
     rospack = rospkg.RosPack()
     package_directory = rospack.get_path('stretchsense')
@@ -19,6 +18,9 @@ class SmartGloveHandler:
         # trained data location
         self.haveTheta = False
         self.peripheralInUse = None
+
+        self.knownPeripherals = {}
+        self.availablePeripherals = []
 
         self.params = {'hci': 0,
                        'timeout': 4,
@@ -31,14 +33,14 @@ class SmartGloveHandler:
     def findGloves(self):
         scanner = btle.Scanner().withDelegate(StretchSenseDelegate(self.params))
         devices = scanner.scan(3)
-        availblePeripherals = self.listAvailablePeripherals(devices)
-        knownPeripherals = self.listKnownPeripherals()
+        self.availablePeripherals = self.listAvailablePeripherals(devices)
+        self.knownPeripherals = self.listKnownPeripherals()
 
-        if len(availblePeripherals) > 0:
-            return availblePeripherals, knownPeripherals
+        if len(self.availablePeripherals) > 0:
+            return True
         else:
             print('No compatible gloves found\n')
-            quit()
+            return False
 
     def listAvailablePeripherals(self, devices)->List:
         listOfPeripheralsAvailable = []
@@ -51,21 +53,37 @@ class SmartGloveHandler:
 
     def listKnownPeripherals(self):
         # compare to list of known peripherals
-        knownPeripherals = open(f'{self.package_directory}/src/data/knownPeripherals.yaml')
-        kP = yaml.load(knownPeripherals, Loader=yaml.FullLoader)
+        knownPeripheralsYaml = open(f'{self.package_directory}/src/data/knownPeripherals.yaml')
+        kP = yaml.load(knownPeripheralsYaml, Loader=yaml.FullLoader)
         return kP['Gloves']
 
-    def selectGlove(self, availablePeripherals, knownPeripherals):
+    def selectGlove(self):
         print("Select a glove to connect\n")
-        for idx, glove in enumerate(availablePeripherals):
-            if glove in knownPeripherals.keys():
-                print(f'\t {idx}. {knownPeripherals[glove]}\n')
+        for idx, glove in enumerate(self.availablePeripherals):
+            if glove in self.knownPeripherals.keys():
+                print(f'\t {idx}. {self.knownPeripherals[glove]}\n')
             else:
                 print(f'\t {idx} New Peripheral, address: {glove}\n')
 
-        selectedIdx = int(input(f'Select from 0 to {len(availablePeripherals) - 1} for a glove: '))
-        addr = availablePeripherals[selectedIdx]
+        selectedIdx = int(input(f'Select from 0 to {len(self.availablePeripherals) - 1} for a glove: '))
+        addr = self.availablePeripherals[selectedIdx]
         return addr
+
+    def actionServerConnectGlove(self, selection):
+        # if the user returns an address, it must be available but unknown peripheral
+        if selection in self.availablePeripherals:
+            self.connectGlove(selection)
+            return True
+        else:
+            # if the above is not satisfied, the selection must be a name of a known peripheral
+            for key, value in self.knownPeripherals.items():
+                if value == selection:
+                    self.connectGlove(key)
+                    return True
+                else:
+                    pass
+
+        return False
 
 
     def connectGlove(self, address):
@@ -85,9 +103,20 @@ class SmartGloveHandler:
 
     def findTrainedData(self):
         files = os.listdir(f'{self.package_directory}/src/data/')
-        data = [file for file in files if file[-4:] == '.csv']
-        return data
+        filenames = [file for file in files if file[-4:] == '.csv']
+        return filenames
 
+    def actionServerSelectData(self, file):
+        filename = f'{self.package_directory}/src/data/{file}'
+        return self.selectDataFile(filename)
+
+    def selectDataFile(self, filename):
+        theta = pd.read_csv(filename, sep=',', header=None)
+        if isinstance(self.peripheralInUse, btle.Peripheral):
+            self.peripheralInUse.delegate.setTheta(theta.values)
+            return True
+        else:
+            return False
 
     def selectData(self, trainedData):
         print("\nSelect a model to use\n")
@@ -104,10 +133,7 @@ class SmartGloveHandler:
         elif selected.isdigit():
             idx = int(selected)
             filename = f'{self.package_directory}/src/data/{trainedData[idx]}'
-            theta = pd.read_csv(filename, sep=',', header=None)
-
-            if isinstance(self.peripheralInUse, btle.Peripheral):
-                self.peripheralInUse.delegate.setTheta(theta.values)
+            self.selectDataFile(filename)
 
             return True
                 # self.peripheralInUse.delegate.publishCapacitance()
@@ -129,13 +155,23 @@ class SmartGloveHandler:
     def callPublisher(self):
         self.peripheralInUse.delegate.publishCapacitance(callback=self.readSensor)
 
+    def disconnectPeripheral(self):
+        if isinstance(self.peripheralInUse, btle.Peripheral):
+            self.peripheralInUse.disconnect()
+
+
+
+
+
 
 if __name__ == "__main__":
     rospy.init_node('stretchsenseCAP', anonymous=True)
 
     myglove = SmartGloveHandler()
-    aP, kP = myglove.findGloves()
-    addr = myglove.selectGlove(aP,kP)
+
+    if myglove.findGloves():
+        addr = myglove.selectGlove()
+
     if myglove.connectGlove(addr):
         data = myglove.findTrainedData()
         if myglove.selectData(data):

@@ -1,20 +1,10 @@
 <?xml version="1.0"?>
 <launch>
 
-	<group ns = "stretchsense">
-		<node name="stretchsenseCAP" type="SmartGloveHandler.py" pkg="stretchsense" output="screen" />
-	</group>
-
-
-<!--	<node pkg="vnav" type="vectornav_cleaned.py" name="vnav"/>-->
-<!--	<node pkg="vnav" type="recognizer_server.py" name="recognizer" output="screen"/>-->
-<!--	<node name="vnavplot" pkg="rqt_plot" type="rqt_plot" args="/vnavMagnitude/data[2] /vnavMagnitude/data[3] /vnavMagnitude/data[4] /vnavMagnitude/data[5]"/>-->
-
 	<!-- Parsing xacro and setting robot_description parameter -->
 	<param name="robot_description" command="$(find xacro)/xacro $(find stretchsense)/urdf/lefthand_NED.xacro" />
 	<!-- Starting robot state publish which will publish tf -->
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 	<!-- Launch visualization in rviz -->
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find stretchsense)/urdf/urdf.rviz" required="true" />
-
 </launch>
