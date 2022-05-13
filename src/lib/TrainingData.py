@@ -81,7 +81,7 @@ class TrainingData:
             self.LastX = currentX
             if self.CaptureCalibrationData:
                 self.X[self.smplidx][0] = 1
-                self.X[self.smplidx][1:] = np.array(currentX[1:])
+                self.X[self.smplidx][1:] = np.array(currentX)
                 self.y[self.smplidx] = self.currentY
 
                 self.smplidx += 1

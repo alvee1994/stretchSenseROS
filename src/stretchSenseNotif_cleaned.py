@@ -136,10 +136,10 @@ class SmartGloveSS:
                 self.haveTheta = False
             else:
                 self.haveTheta = True
-                TrainingData.CaptureCalibrationData = False
-                TrainingData.complete = True
+                self.Training.CaptureCalibrationData = False
+                self.Training.complete = True
                 theta = pd.read_csv(self.thetafile, sep=',', header=None)
-                self.mtheta = TrainingData.mtheta = theta.values
+                self.mtheta = self.Training.mtheta = theta.values
         else:
             print('Getting ready to Calibrate in 5 secs')
             time.sleep(5)
@@ -149,10 +149,10 @@ class SmartGloveSS:
 
     def loadTheta(self):
         self.haveTheta = True
-        TrainingData.CaptureCalibrationData = False
-        TrainingData.complete = True
+        self.Training.CaptureCalibrationData = False
+        self.Training.complete = True
         theta = pd.read_csv(self.thetafile, sep=',', header=None)
-        self.mtheta = TrainingData.mtheta = theta.values
+        self.mtheta = self.Training.mtheta = theta.values
 
     def digits(self, position):
         # convert to radians for joint state
@@ -183,22 +183,22 @@ class SmartGloveSS:
         while not self.haveTheta and not rospy.is_shutdown():
             # index of the training segment
             sensorData = self.readSensors()
-            if TrainingData.CaptureCalibrationData == True:
+            if self.Training.CaptureCalibrationData == True:
                 old = time.time()
-                index = TrainingData.TrainingIndex
+                index = self.Training.TrainingIndex
                 d, _ = self.digits(self.trainingY[index])
                 self.publishCap(calibrate=True, digits=d)
                 self.Training.Update(sensorData)
                 rospy.loginfo('reading %i' % index)
-            elif TrainingData.CaptureCalibrationData == False and TrainingData.complete == False:
+            elif self.Training.CaptureCalibrationData == False and self.Training.complete == False:
                 timeLeft = time.time() - old
                 d, _ = self.digits(self.trainingY[index + 1])  # ignore fingers when calibrating
                 self.publishCap(calibrate=True, digits=d)
                 rospy.loginfo('renewing recording in %f' % timeLeft)
                 if timeLeft > 5:
-                    TrainingData.CaptureCalibrationData = True
-            elif TrainingData.complete == True:
-                theta = pd.DataFrame(TrainingData.mtheta)
+                    self.Training.CaptureCalibrationData = True
+            elif self.Training.complete == True:
+                theta = pd.DataFrame(self.Training.mtheta)
                 newfile = self.package_directory + "/src/data/theta_" + str(rospy.Time.now()) + ".csv"
                 self.thetafile = newfile
                 theta.to_csv(self.thetafile, index=False, header=False)
@@ -209,8 +209,8 @@ class SmartGloveSS:
     def publishCap(self, calibrate=False, digits=[]):
         if calibrate == False:
             self.loadTheta()
-            try:
-                while not rospy.is_shutdown():
+            while not rospy.is_shutdown():
+                try:
                     self.Joints.header.seq += 1
                     self.Joints.header.stamp = rospy.Time.now()
                     sens = self.readSensors()
@@ -222,12 +222,15 @@ class SmartGloveSS:
                     self.pubjs.publish(self.Joints)
                     self.pubfingers.publish(self.Position)
                     self.rate.sleep()
-            except:
-                print('disconnecting...')
-                for p in self.peripheralInUse:
-                    p.disconnect()
-                quit()
-                pass
+                except Exception as e:
+                    print(e)
+                    pass
+                    # print(e)
+                    # print('disconnecting...')
+                    # for p in self.peripheralInUse:
+                    #     p.disconnect()
+                    # quit()
+                    
         else:
             self.Joints.header.seq += 1
             self.Joints.header.stamp = rospy.Time.now()

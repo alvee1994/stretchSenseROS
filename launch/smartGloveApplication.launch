@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+	<node name="stretchsenseCAP" type="stretchSenseNotif_cleaned.py" pkg="stretchsense" output="screen" />	<!-- Parsing xacro and setting robot_description parameter -->
+</launch>
