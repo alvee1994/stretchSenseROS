@@ -224,12 +224,10 @@ class SmartGloveSS:
                     self.rate.sleep()
                 except Exception as e:
                     print(e)
-                    pass
-                    # print(e)
-                    # print('disconnecting...')
-                    # for p in self.peripheralInUse:
-                    #     p.disconnect()
-                    # quit()
+                    print('disconnecting...')
+                    for p in self.peripheralInUse:
+                        p.disconnect()
+                    quit()
                     
         else:
             self.Joints.header.seq += 1

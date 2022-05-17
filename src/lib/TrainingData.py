@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
 from lib import SolveLeastSquares
-import time
 
 Solver = SolveLeastSquares.SolveLeastSquares()
 
@@ -33,9 +32,6 @@ class TrainingData:
         [0, 0, 0, 0, 0, 0],  # Thumb 0 0
         [-45, 30, -90, -90, -90, -90]  # Thumb over fist
     ])
-
-    # All = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-    # ActiveSensor = np.array([All, All, All, All, All, All, All, All])
 
     def __init__(self):
         # booleans
@@ -109,7 +105,6 @@ class TrainingData:
         else:
             print('Done recording')
             self.complete = True
-            #Solver.ActiveSensors(ActiveSensor)
             trainingData = Solver.Solve(self.X,self.y)
             self.setTheta(trainingData)
         
@@ -119,12 +114,6 @@ class TrainingData:
         self.mtheta = theta
 
 
-##Training = TrainingData()
-##TrainingYMax = Training.getTrainingMax(TrainingY)
-##TrainingYMin = Training.getTrainingMin(TrainingY);
-##currentY = Training.getCurrentY(TrainingY);
-##
-##print(TrainingYMax, TrainingYMin, currentY)
 
     
 

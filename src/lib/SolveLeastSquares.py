@@ -2,7 +2,6 @@
 import numpy as np
 from sklearn import linear_model
 from tempfile import TemporaryFile
-from joblib import dump
 
 activeSensors = np.array([
     [1, 1, 0, 1, 0, 0, 0, 0], # thumb

@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
-from typing import Tuple, List
 import time
 import rospy
 import numpy as np
-import pandas as pd
-import threading
 import binascii
 from bluepy import btle
 from sensor_msgs.msg import JointState
