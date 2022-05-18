@@ -21,7 +21,7 @@ rospack = rospkg.RosPack()
 
 class StretchSenseDelegate(btle.DefaultDelegate):
     def __init__(self, params):
-        btle.DefaultDelegate.__init__(self)
+        super().__init__()
         self.val = [0, 1, 2, 3]
 
     def handleNotification(self, cHandle, data):
@@ -39,7 +39,7 @@ class SmartGloveSS:
     """
     haveTheta = False
     package_directory = rospack.get_path('stretchsense')
-    thetafile = package_directory + "/src/data/sam_theta.csv"
+    thetafile = package_directory + "/src/data/theta_default.csv"
     """
     More Variables
     """
@@ -183,7 +183,7 @@ class SmartGloveSS:
         while not self.haveTheta and not rospy.is_shutdown():
             # index of the training segment
             sensorData = self.readSensors()
-            if self.Training.CaptureCalibrationData == True:
+            if self.Training.CaptureCalibrationData == True: 
                 old = time.time()
                 index = self.Training.TrainingIndex
                 d, _ = self.digits(self.trainingY[index])
@@ -210,24 +210,36 @@ class SmartGloveSS:
         if calibrate == False:
             self.loadTheta()
             while not rospy.is_shutdown():
-                try:
-                    self.Joints.header.seq += 1
-                    self.Joints.header.stamp = rospy.Time.now()
-                    sens = self.readSensors()
-                    sens = np.insert(sens, 0, 1)
-                    transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
-                    digits, fingers = self.digits(transformed)
-                    self.Joints.position = digits
-                    self.Position.values = fingers
-                    self.pubjs.publish(self.Joints)
-                    self.pubfingers.publish(self.Position)
-                    self.rate.sleep()
-                except Exception as e:
-                    print(e)
-                    print('disconnecting...')
-                    for p in self.peripheralInUse:
-                        p.disconnect()
-                    quit()
+                # try:
+                #     self.Joints.header.seq += 1
+                #     self.Joints.header.stamp = rospy.Time.now()
+                #     sens = self.readSensors()
+                #     sens = np.insert(sens, 0, 1)
+                #     transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
+                #     digits, fingers = self.digits(transformed)
+                #     self.Joints.position = digits
+                #     self.Position.values = fingers
+                #     self.pubjs.publish(self.Joints)
+                #     self.pubfingers.publish(self.Position)
+                #     self.rate.sleep()
+                # except Exception as e:
+                #     print(e)
+                #     print('disconnecting...')
+                #     for p in self.peripheralInUse:
+                #         p.disconnect()
+                #     quit()
+
+                self.Joints.header.seq += 1
+                self.Joints.header.stamp = rospy.Time.now()
+                sens = self.readSensors()
+                sens = np.insert(sens, 0, 1)
+                transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
+                digits, fingers = self.digits(transformed)
+                self.Joints.position = digits
+                self.Position.values = fingers
+                self.pubjs.publish(self.Joints)
+                self.pubfingers.publish(self.Position)
+                self.rate.sleep()
                     
         else:
             self.Joints.header.seq += 1

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
-from lib import SolveLeastSquares
+from . import SolveLeastSquares
 
 Solver = SolveLeastSquares.SolveLeastSquares()
 
@@ -113,9 +113,6 @@ class TrainingData:
     def setTheta(self, theta):
         self.mtheta = theta
 
-
-
-    
 
     
 

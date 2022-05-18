@@ -12,7 +12,7 @@ activeSensors = np.array([
     [0, 0, 0, 0, 0, 0, 0, 1]  # pinky
 ])
 
-linRegCoff = TemporaryFile()
+# linRegCoff = TemporaryFile()
 
 class SolveLeastSquares:
 
@@ -46,9 +46,9 @@ class SolveLeastSquares:
 
         for i in range(len(theta)):
             idx = np.nonzero(activeSensors[i])
-            list = [x for x in inputt[idx]]
-            for n in range(len(list)):
-                inp[i][n] = list[n]
+            list_ = [x for x in inputt[idx]]
+            for n in range(len(list_)):
+                inp[i][n] = list_[n]
 
             result[i] = np.dot(theta[i], inp[i])
 

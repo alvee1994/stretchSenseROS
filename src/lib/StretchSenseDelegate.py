@@ -6,7 +6,7 @@ import numpy as np
 import binascii
 from bluepy import btle
 from sensor_msgs.msg import JointState
-from lib import TrainingData, SolveLeastSquares
+from . import TrainingData, SolveLeastSquares
 
 
 # from stretchsense.msg import ssCap
