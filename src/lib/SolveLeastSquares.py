@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Module for solving least squares. """
+from typing import List
 import numpy as np
 from sklearn import linear_model
 
@@ -53,7 +54,7 @@ class SolveLeastSquares:
         for index, targets in enumerate(target_data_transposed):
 
             # Cleaning the input data
-            idx = np.nonzero(ACTIVE_SENSORS[index])
+            idx = np.nonzero(SolveLeastSquares.ACTIVE_SENSORS[index])
             cleaned_input = input_data[:,idx].flatten().reshape(
                     input_data.shape[0], -1)
             cols = cleaned_input.shape[-1]
@@ -72,7 +73,9 @@ class SolveLeastSquares:
         print('DONE training')
         return theta
 
-    def apply_transformation(self, input_data, theta):
+    def apply_transformation(self,
+                             input_data: np.ndarray,
+                             theta: List) -> np.ndarray:
         """Transforms capacitance data into the angle of each joint.
 
         Takes in capacitance data and theta values, then uses matrix multiplication
@@ -92,7 +95,7 @@ class SolveLeastSquares:
         cleaned_input = np.ones((len(input_data), 4))
 
         for i in range(len(theta)): 
-            idx = np.nonzero(ACTIVE_SENSORS[i])
+            idx = np.nonzero(SolveLeastSquares.ACTIVE_SENSORS[i])
             filtered_input = [x for x in input_data[idx]]
             for n in range(len(filtered_input)):
                 cleaned_input[i][n] = filtered_input[n]
