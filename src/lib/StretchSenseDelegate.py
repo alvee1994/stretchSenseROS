@@ -53,7 +53,7 @@ class StretchSenseDelegate(btle.DefaultDelegate):
         self.capacitance = np.insert(cap, 0, 1)
 
     def applyTransformation(self) -> np.ndarray:
-        return self.Solver.ApplyTransformation(self.capacitance, self.mtheta)
+        return self.Solver.apply_transformation(self.capacitance, self.mtheta)
 
     def degToRads(self, position: np.ndarray):
         # convert to radians for joint state

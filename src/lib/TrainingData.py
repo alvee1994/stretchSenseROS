@@ -105,11 +105,11 @@ class TrainingData:
         else:
             print('Done recording')
             self.complete = True
-            trainingData = Solver.Solve(self.X,self.y)
+            trainingData = Solver.solve(self.X,self.y)
             self.setTheta(trainingData)
         
     def ApplyTransformation(self, inputt, theta):
-        return Solver.ApplyTransformation(inputt, theta)
+        return Solver.apply_transformation(inputt, theta)
     def setTheta(self, theta):
         self.mtheta = theta
 

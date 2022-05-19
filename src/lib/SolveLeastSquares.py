@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import numpy as np
 from sklearn import linear_model
-from tempfile import TemporaryFile
 
-activeSensors = np.array([
+ACTIVE_SENSORS = np.array([
     [1, 1, 0, 1, 0, 0, 0, 0], # thumb
     [0, 1, 1, 1, 0, 0, 0, 0], # thumb
     [0, 0, 0, 0, 1, 0, 0, 0], # index
@@ -12,45 +11,43 @@ activeSensors = np.array([
     [0, 0, 0, 0, 0, 0, 0, 1]  # pinky
 ])
 
-# linRegCoff = TemporaryFile()
 
 class SolveLeastSquares:
-
-    def Solve(self, X, yArray):
-        # y = np.zeros(len(yArray))
+    def solve(self, input_data, target_data):
         theta = []
 
-        t_yArray = yArray.transpose()
+        target_data_transposed = target_data.transpose()
 
-        print(f'shape of yArray is {yArray.shape}')
+        for index, targets in enumerate(target_data_transposed):
 
-        for index, _ in enumerate(t_yArray):
-            y = t_yArray[index] # column of a single finger
-            idx = np.nonzero(activeSensors[index])
-            X_copy = X[:,idx].flatten().reshape(X.shape[0], -1)
-            print(f'the idx is {idx}\n')
-            cols = X_copy.shape[-1]
-            X_copy = np.pad(X_copy, ((0,0),(0,3-cols)), 'constant')
-            print(f'\n######\n\n{X_copy}\n\n######\n')
+            # Cleaning the input data
+            idx = np.nonzero(ACTIVE_SENSORS[index])
+            cleaned_input = input_data[:,idx].flatten().reshape(input_data.shape[0], -1)
+            cols = cleaned_input.shape[-1]
+            cleaned_input = np.pad(cleaned_input, ((0,0),(0,3-cols)), 'constant')
+
+            # Performing linear regression on the cleaned input and target data
             regr = linear_model.LinearRegression()
-            regr.fit(X_copy, y)
+            regr.fit(cleaned_input, targets)
+
+            # Append results to output list
             theta.append([s for s in regr.coef_])
             theta[index].append(regr.intercept_)
 
         print('DONE training')
         return theta
 
-    def ApplyTransformation(self, inputt, theta):
+    def apply_transformation(self, input_data, theta):
         result = np.zeros(len(theta))
-        inp = np.ones((len(inputt), 4))
+        cleaned_input = np.ones((len(input_data), 4))
 
-        for i in range(len(theta)):
-            idx = np.nonzero(activeSensors[i])
-            list_ = [x for x in inputt[idx]]
-            for n in range(len(list_)):
-                inp[i][n] = list_[n]
+        for i in range(len(theta)): 
+            idx = np.nonzero(ACTIVE_SENSORS[i])
+            filtered_input = [x for x in input_data[idx]]
+            for n in range(len(filtered_input)):
+                cleaned_input[i][n] = filtered_input[n]
 
-            result[i] = np.dot(theta[i], inp[i])
+            result[i] = np.dot(theta[i], cleaned_input[i])
 
         return result
 

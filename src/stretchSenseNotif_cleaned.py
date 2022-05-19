@@ -229,7 +229,7 @@ class SmartGloveSS:
                     self.Joints.header.stamp = rospy.Time.now()
                     sens = self.readSensors()
                     sens = np.insert(sens, 0, 1)
-                    transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
+                    transformed = self.Solver.apply_transformation(sens, self.mtheta)
                     digits, fingers = self.digits(transformed)
                     self.Joints.position = digits
                     self.Position.values = fingers
