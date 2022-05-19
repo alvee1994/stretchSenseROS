@@ -37,9 +37,11 @@ class SolveLeastSquares:
         respect to the given target data.
 
         Args:
-            input_data: a numpy array of integers. Each row is a unique sample
+            input_data: 
+                a numpy array of integers. Each row is a unique sample
                 and each sample contains the capacitance data from the glove
-            target_data: a numpy array of integers. Each row is a sample
+            target_data: 
+                a numpy array of integers. Each row is a sample
                 corresponding to input_data and contains the target angles per joint
 
         Returns:
@@ -82,9 +84,11 @@ class SolveLeastSquares:
         to output the angle of each joint.
 
         Args:
-            input_data: a numpy array of integers representing the capacitance data
+            input_data: 
+                a numpy array of integers representing the capacitance data
                 captured by the glove.
-            theta: a list of integers representing the coefficients and intercepts 
+            theta: 
+                a list of integers representing the coefficients and intercepts 
                 of the regression line.
 
         Returns:

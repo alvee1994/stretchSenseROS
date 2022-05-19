@@ -195,7 +195,7 @@ class SmartGloveSS:
                 sensorData = self.readSensors()
                 if self.Training.is_calibrating == True: 
                     old = time.time()
-                    index = self.Training.training_index
+                    index = self.Training.gesture_index
                     d, _ = self.digits(self.trainingY[index])
                     self.publishCap(calibrate=True, digits=d)
                     self.Training.update_sample(sensorData)
