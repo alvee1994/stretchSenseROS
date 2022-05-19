@@ -21,22 +21,54 @@ rospack = rospkg.RosPack()
 
 
 class StretchSenseDelegate(btle.DefaultDelegate):
-    def __init__(self, params):
-        super().__init__()
-        self.val = [0, 1, 2, 3]
+    """Handles notifications from the glove
+    
+    This class handles the notifications sent from the glove via Bluetooth
+    Low Energy.
+    """
 
-    def handleNotification(self, cHandle, data):
+    def __init__(self):
+        """Constructor for StretchSenseDelegate"""
+
+        super().__init__()
+
+    def handleNotification(self, cHandle, data) -> None:
+        """Implementation of the handleNotification method in DefaultDelegate.
+        
+        Takes in bytestring data from the glove via BLE and converts it into
+        capacitatance data in the form of a numpy array vector of type int.
+
+        Args:
+            cHandle:
+                Unused parameter.
+            data:
+                Bytestring data from glove's sensors.
+        """
+
         decimalValue = (binascii.b2a_hex(data))
         splitted = [decimalValue[i:i + 4] for i in range(0, len(decimalValue), 4)]
-        self.val = np.array(list(map(lambda x: int((x), 16) / 10, splitted)))
-        idx = np.nonzero(self.val)
-        self.val = self.val[idx]
-        SmartGloveSS.capacitance = self.val
+        val = np.array(list(map(lambda x: int((x), 16) / 10, splitted)))
+        idx = np.nonzero(val)
+        val = val[idx]
+        SmartGloveSS.capacitance = val
 
-# error class documentation WIP
 class InvalidCapacitanceException(Exception):
-    def __init__(self, capacitance: List):
-        super().__init__("{} is an invalid capacitance data entry".format(capacitance))
+    """Exception that is raised when the capacitance data is invalid.
+
+    Raised when the capacitance data received cannot be used for analysis
+    and/or training.
+    """
+
+    def __init__(self, capacitance: np.ndarray):
+        """ Constructor for the exception.
+
+        Message contains a string containing the erroneous capacitance data.
+
+        Args:
+            capacitance: numpy array containing a sample of capacitance data.
+        """
+
+        super().__init__(f"{capacitance} is an invalid capacitance data entry")
 
 class SmartGloveSS:
     """
@@ -54,7 +86,7 @@ class SmartGloveSS:
     the initiated peripheral itself
     """
     peripheralInUse = deque(maxlen=1)
-    capacitance = []
+    capacitance = [] # should be a numpy array instead
 
     def __init__(self):
         # machine learning
@@ -83,15 +115,17 @@ class SmartGloveSS:
 
     def connectGlove(self):
         # initiate scanner to scan and filter stretchsense devices with the following parameters
-        params = {'hci': 0,
-                  'timeout': 4,
-                  'sensitivity': -128,
-                  'discover': True,
-                  'all': True,
-                  'new': True,
-                  'verbose': True}
+        # params = {'hci': 0,
+        #           'timeout': 4,
+        #           'sensitivity': -128,
+        #           'discover': True,
+        #           'all': True,
+        #           'new': True,
+        #           'verbose': True}
 
-        scanner = btle.Scanner().withDelegate(StretchSenseDelegate(params))
+        # scanner = btle.Scanner().withDelegate(StretchSenseDelegate(params))
+
+        scanner = btle.Scanner().withDelegate(StretchSenseDelegate())
         devices = scanner.scan(3)
         listOfPeripheralsAvailable = []
 
@@ -125,7 +159,8 @@ class SmartGloveSS:
 
     def connectOnePeripheral(self, addr):
         p = btle.Peripheral(addr, 'random')
-        p.withDelegate(StretchSenseDelegate(p))
+        # p.withDelegate(StretchSenseDelegate(p))
+        p.withDelegate(StretchSenseDelegate())
         print('connected to %s ' % addr)
         svc = p.getServiceByUUID('00001701-7374-7265-7563-6873656e7365')
         char = svc.getCharacteristics()[0]
