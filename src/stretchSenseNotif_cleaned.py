@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import time
+from typing import List
 import numpy as np
 import yaml
 import pandas as pd
@@ -32,6 +33,10 @@ class StretchSenseDelegate(btle.DefaultDelegate):
         self.val = self.val[idx]
         SmartGloveSS.capacitance = self.val
 
+# error class documentation WIP
+class InvalidCapacitanceException(Exception):
+    def __init__(self, capacitance: List):
+        super().__init__("{} is an invalid capacitance data entry".format(capacitance))
 
 class SmartGloveSS:
     """
@@ -177,84 +182,71 @@ class SmartGloveSS:
             for p in self.peripheralInUse:
                 if p.waitForNotifications(1.0):
                     continue
-        return self.capacitance
+
+        if len(self.capacitance) == self.Training.nSensors:
+            return self.capacitance
+        else:
+            raise InvalidCapacitanceException(self.capacitance)
 
     def calibrateGlove(self):
         while not self.haveTheta and not rospy.is_shutdown():
             # index of the training segment
-            sensorData = self.readSensors()
-            if self.Training.CaptureCalibrationData == True: 
-                old = time.time()
-                index = self.Training.TrainingIndex
-                d, _ = self.digits(self.trainingY[index])
-                self.publishCap(calibrate=True, digits=d)
-                self.Training.Update(sensorData)
-                rospy.loginfo('reading %i' % index)
-            elif self.Training.CaptureCalibrationData == False and self.Training.complete == False:
-                timeLeft = time.time() - old
-                d, _ = self.digits(self.trainingY[index + 1])  # ignore fingers when calibrating
-                self.publishCap(calibrate=True, digits=d)
-                rospy.loginfo('renewing recording in %f' % timeLeft)
-                if timeLeft > 5:
-                    self.Training.CaptureCalibrationData = True
-            elif self.Training.complete == True:
-                theta = pd.DataFrame(self.Training.mtheta)
-                newfile = self.package_directory + "/src/data/theta_" + str(rospy.Time.now()) + ".csv"
-                self.thetafile = newfile
-                theta.to_csv(self.thetafile, index=False, header=False)
-                print('saved new model')
-                self.haveTheta = True
-            self.rate.sleep()
+            try:
+                sensorData = self.readSensors()
+                if self.Training.CaptureCalibrationData == True: 
+                    old = time.time()
+                    index = self.Training.TrainingIndex
+                    d, _ = self.digits(self.trainingY[index])
+                    self.publishCap(calibrate=True, digits=d)
+                    self.Training.Update(sensorData)
+                    rospy.loginfo('reading %i' % index)
+                elif self.Training.CaptureCalibrationData == False and self.Training.complete == False:
+                    timeLeft = time.time() - old
+                    d, _ = self.digits(self.trainingY[index + 1])  # ignore fingers when calibrating
+                    self.publishCap(calibrate=True, digits=d)
+                    rospy.loginfo('renewing recording in %f' % timeLeft)
+                    if timeLeft > 5:
+                        self.Training.CaptureCalibrationData = True
+                elif self.Training.complete == True:
+                    theta = pd.DataFrame(self.Training.mtheta)
+                    newfile = self.package_directory + "/src/data/theta_" + str(rospy.Time.now()) + ".csv"
+                    self.thetafile = newfile
+                    theta.to_csv(self.thetafile, index=False, header=False)
+                    print('saved new model')
+                    self.haveTheta = True
+                self.rate.sleep()
+            except InvalidCapacitanceException as e:
+                print(e)
+                print("skipping...")
+                continue
 
     def publishCap(self, calibrate=False, digits=[]):
         if calibrate == False:
             self.loadTheta()
             while not rospy.is_shutdown():
-                # try:
-                #     self.Joints.header.seq += 1
-                #     self.Joints.header.stamp = rospy.Time.now()
-                #     sens = self.readSensors()
-                #     sens = np.insert(sens, 0, 1)
-                #     transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
-                #     digits, fingers = self.digits(transformed)
-                #     self.Joints.position = digits
-                #     self.Position.values = fingers
-                #     self.pubjs.publish(self.Joints)
-                #     self.pubfingers.publish(self.Position)
-                #     self.rate.sleep()
-                # except Exception as e:
-                #     print(e)
-                #     print('disconnecting...')
-                #     for p in self.peripheralInUse:
-                #         p.disconnect()
-                #     quit()
-
-                self.Joints.header.seq += 1
-                self.Joints.header.stamp = rospy.Time.now()
-                sens = self.readSensors()
-                sens = np.insert(sens, 0, 1)
-                transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
-                digits, fingers = self.digits(transformed)
-                self.Joints.position = digits
-                self.Position.values = fingers
-                self.pubjs.publish(self.Joints)
-                self.pubfingers.publish(self.Position)
-                self.rate.sleep()
+                try:
+                    self.Joints.header.seq += 1
+                    self.Joints.header.stamp = rospy.Time.now()
+                    sens = self.readSensors()
+                    sens = np.insert(sens, 0, 1)
+                    transformed = self.Solver.ApplyTransformation(sens, self.mtheta)
+                    digits, fingers = self.digits(transformed)
+                    self.Joints.position = digits
+                    self.Position.values = fingers
+                    self.pubjs.publish(self.Joints)
+                    self.pubfingers.publish(self.Position)
+                    self.rate.sleep()
+                except InvalidCapacitanceException as e:
+                    print(e)
+                    print('skipping...')
+                    continue
                     
+             
         else:
             self.Joints.header.seq += 1
             self.Joints.header.stamp = rospy.Time.now()
             self.Joints.position = digits
             self.pubjs.publish(self.Joints)
-
-    # def quitProcess(self):
-    #     print('ending application\n')
-    #     try:
-    #         for p in self.peripheralInUse:
-    #             p.disconnect()
-    #     except:
-    #         print('no gloves were connected\n')
-    #     quit()
 
 
 """
