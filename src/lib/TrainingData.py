@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import numpy as np
-from . import SolveLeastSquares
+from .SolveLeastSquares import SolveLeastSquares
 
-Solver = SolveLeastSquares.SolveLeastSquares()
+
 
 # gloves 7 sensors left hand
 # Thumb,Thumb,Thumb,Thumb,Index,Middle,Ring,Pinky
@@ -16,17 +16,13 @@ Solver = SolveLeastSquares.SolveLeastSquares()
 
 class TrainingData:
 
-    TrainingY = np.array([
+    TRAINING_TARGETS = np.array([
         [0, -5, -90, -90, -90, -90],  # Close fist
         [0, -45, -90, -90, -90, -90],  # Thumb up 45 deg
-        # [ 0, -80, -90, -90, -90, -90], #Thumb up 85 deg
         [0, -45, -90, -90, -90, 0],  # Thumb up, pinky out
         [0, -45, 0, -90, -90, -90],  # Thumb up, index out
-        # [0, -45, -90, 0, -90, -90],  # Thumb up, middle out
-        # [0, -45, -90, -90, -45, -90],  # Thumb up, ring out
         [0, -45, 0, 0, 0, 0],  # Open hand
         [0, 30, 0, 0, 0, 0],  # Tuck thumb
-        # [ 0, 30, -80, -80, -80, -80], #Tuck thumb in fist
         [-45, 0, 0, 0, 0, 0],  # Rotate thumb hand open (target thumb)
         [-45, 30, 0, 0, 0, 0],  # Rotate thumb hand open (target thumb)
         [0, 0, 0, 0, 0, 0],  # Thumb 0 0
@@ -34,84 +30,72 @@ class TrainingData:
     ])
 
     def __init__(self):
+        # constants
+        self.NUM_SENSORS = 7
+        self.NUM_GESTURES, self.NUM_OUTPUTS = self.TRAINING_TARGETS.shape
+        self.SAMPLES_PER_POSITION = 100
+        self.NUM_SAMPLES = self.SAMPLES_PER_POSITION * self.NUM_GESTURES
+
         # booleans
-        self.CaptureCalibrationData = True
-        self.FirstPress = True
-        self.complete = False
+        self.is_calibrating = True
+        self.is_complete = False
 
         # indices
-        self.TrainingIndex = 0
-        self.gestIndex = 0
-        self.smplidx = 0
+        self.training_index = 0
+        self.gesture_index = 0
+        self.sample_index = 0
 
-        # array for solver
-        self.nSensors = 7  # smart glove
-        self.nGestures, self.nOutputs = self.TrainingY.shape
-        self.samplesPerPosition = 100
-        self.size = self.samplesPerPosition * self.nGestures #200 samples per gesture
-        self.X = np.zeros((self.size, self.nSensors + 1))
-        self.y = np.zeros((self.size, self.nOutputs))
+        self.inputs = np.zeros((self.NUM_SAMPLES, self.NUM_SENSORS + 1))
+        self.targets = np.zeros((self.NUM_SAMPLES, self.NUM_OUTPUTS))
 
-        self.LastX = np.zeros(self.nSensors)
+        self.prev_input = np.zeros(self.NUM_SENSORS)
         self.mtheta = []
-        self.currentY = self.TrainingY[0]
+        self.curr_target = self.TRAINING_TARGETS[0]
 
-        self.TrainingPositions = self.nGestures
-        self.nSamples = self.size
+        self.SOLVER = SolveLeastSquares()
 
-    def getTrainingData(self):
-        return self.TrainingY
+    def get_training_data(self):
+        return self.TRAINING_TARGETS
 
-    def Update(self, currentX):
-
-        compare = np.array([currentX == self.LastX])
-
-        if self.complete:
+    def update_sample(self, curr_input):
+        
+        if self.is_complete:
             return
 
-        print(compare, type(currentX), type(self.LastX), type(compare))
-        if compare.all():
+        if np.array_equal(curr_input, self.prev_input):
             print('no new data received\n')
             return
         else:
-            self.LastX = currentX
-            if self.CaptureCalibrationData:
-                self.X[self.smplidx][0] = 1
-                self.X[self.smplidx][1:] = np.array(currentX)
-                self.y[self.smplidx] = self.currentY
+            self.prev_input = curr_input
+            if self.is_calibrating:
+                self.inputs[self.sample_index][0] = 1
+                self.inputs[self.sample_index][1:] = np.array(curr_input)
+                self.targets[self.sample_index] = self.curr_target
 
-                self.smplidx += 1
-                self.gestIndex += 1
-                if self.gestIndex >= self.samplesPerPosition:
-                    #Update to new position
-                    self.UpdatePosition()
-                    #Reset Flags
-                    self.CaptureCalibrationData = False
-                    #Reset counters
-                    self.gestIndex = 0
-                                      
-                                      
+                self.sample_index += 1
+                self.gesture_index += 1
+                if self.gesture_index >= self.SAMPLES_PER_POSITION:
+                    # Update to new position
+                    self.update_gesture()
+                    # Reset Flags
+                    self.is_calibrating = False
+                    # Reset counters
+                    self.gesture_index = 0
         
-    def UpdatePosition(self):
-        if self.complete:
+    def update_gesture(self):
+        if self.is_complete:
             return
 
-        self.TrainingIndex += 1
+        self.training_index += 1
         
-        if self.TrainingIndex < self.TrainingPositions:
-            self.currentY = self.TrainingY[self.TrainingIndex]
+        if self.training_index < self.NUM_GESTURES:
+            self.curr_target = self.TRAINING_TARGETS[self.training_index]
             print('next position in 5 seconds')
 
         else:
             print('Done recording')
-            self.complete = True
-            trainingData = Solver.solve(self.X,self.y)
-            self.setTheta(trainingData)
-        
-    def ApplyTransformation(self, inputt, theta):
-        return Solver.apply_transformation(inputt, theta)
-    def setTheta(self, theta):
-        self.mtheta = theta
+            self.is_complete = True
+            self.mtheta = self.SOLVER.solve(self.inputs, self.targets)
 
 
     

@@ -70,7 +70,7 @@ class SmartGloveSS:
         self.rate = rospy.Rate(200)
         self.mtheta = []
         # get training data
-        self.trainingY = self.Training.getTrainingData()
+        self.trainingY = self.Training.get_training_data()
 
         self.Joints.header.frame_id = "ssFingers"
         self.Joints.name = ["left_" + string for string in ["metacarpal_thumb_splay_2", "thumb_meta_prox",
@@ -141,8 +141,8 @@ class SmartGloveSS:
                 self.haveTheta = False
             else:
                 self.haveTheta = True
-                self.Training.CaptureCalibrationData = False
-                self.Training.complete = True
+                self.Training.is_calibrating = False
+                self.Training.is_complete = True
                 theta = pd.read_csv(self.thetafile, sep=',', header=None)
                 self.mtheta = self.Training.mtheta = theta.values
         else:
@@ -154,8 +154,8 @@ class SmartGloveSS:
 
     def loadTheta(self):
         self.haveTheta = True
-        self.Training.CaptureCalibrationData = False
-        self.Training.complete = True
+        self.Training.is_calibrating = False
+        self.Training.is_complete = True
         theta = pd.read_csv(self.thetafile, sep=',', header=None)
         self.mtheta = self.Training.mtheta = theta.values
 
@@ -183,7 +183,7 @@ class SmartGloveSS:
                 if p.waitForNotifications(1.0):
                     continue
 
-        if len(self.capacitance) == self.Training.nSensors:
+        if len(self.capacitance) == self.Training.NUM_SENSORS:
             return self.capacitance
         else:
             raise InvalidCapacitanceException(self.capacitance)
@@ -193,21 +193,21 @@ class SmartGloveSS:
             # index of the training segment
             try:
                 sensorData = self.readSensors()
-                if self.Training.CaptureCalibrationData == True: 
+                if self.Training.is_calibrating == True: 
                     old = time.time()
-                    index = self.Training.TrainingIndex
+                    index = self.Training.training_index
                     d, _ = self.digits(self.trainingY[index])
                     self.publishCap(calibrate=True, digits=d)
-                    self.Training.Update(sensorData)
+                    self.Training.update_sample(sensorData)
                     rospy.loginfo('reading %i' % index)
-                elif self.Training.CaptureCalibrationData == False and self.Training.complete == False:
+                elif self.Training.is_calibrating == False and self.Training.is_complete == False:
                     timeLeft = time.time() - old
                     d, _ = self.digits(self.trainingY[index + 1])  # ignore fingers when calibrating
                     self.publishCap(calibrate=True, digits=d)
                     rospy.loginfo('renewing recording in %f' % timeLeft)
                     if timeLeft > 5:
-                        self.Training.CaptureCalibrationData = True
-                elif self.Training.complete == True:
+                        self.Training.is_calibrating = True
+                elif self.Training.is_complete == True:
                     theta = pd.DataFrame(self.Training.mtheta)
                     newfile = self.package_directory + "/src/data/theta_" + str(rospy.Time.now()) + ".csv"
                     self.thetafile = newfile
