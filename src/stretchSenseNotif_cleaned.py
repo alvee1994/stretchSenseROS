@@ -45,12 +45,12 @@ class StretchSenseDelegate(btle.DefaultDelegate):
                 Bytestring data from glove's sensors.
         """
 
-        decimalValue = (binascii.b2a_hex(data))
-        splitted = [decimalValue[i:i + 4] for i in range(0, len(decimalValue), 4)]
-        val = np.array(list(map(lambda x: int((x), 16) / 10, splitted)))
-        idx = np.nonzero(val)
-        val = val[idx]
-        SmartGloveSS.capacitance = val
+        hex_vals = (binascii.b2a_hex(data))
+        split_vals = np.array([int(hex_vals[i:i + 4], 16) / 10 
+                               for i in range(0, len(hex_vals), 4)])
+        # val = np.array(list(map(lambda x: int((x), 16) / 10, splitted)))
+        capacitance = split_vals[split_vals != 0]
+        SmartGloveSS.capacitance = capacitance
 
 class InvalidCapacitanceError(Exception):
     """Exception that is raised when the capacitance data is invalid.
@@ -128,8 +128,10 @@ class SmartGloveSS:
                     available_peripherals.append(dev.addr)
 
         # get name of known peripherals from yaml file
-        known_peripherals_yaml = open(self.PACKAGE_DIRECTORY + "/src/data/knownPeripherals.yaml")
-        known_peripherals = yaml.load(known_peripherals_yaml, Loader=yaml.FullLoader)
+        known_peripherals_yaml = open(self.PACKAGE_DIRECTORY + 
+                                      "/src/data/knownPeripherals.yaml")
+        known_peripherals = yaml.load(known_peripherals_yaml,
+                                      Loader=yaml.FullLoader)
         known_gloves = known_peripherals['Gloves']
 
         # user selects a glove to connect
@@ -141,7 +143,8 @@ class SmartGloveSS:
                 else:
                     print(f"{idx}. Unknown, addr: {addr}")
 
-            selected = int(input(f"\n Select glove from 0 to {len(available_peripherals) - 1}: "))
+            selected = int(input("\n Select glove from 0 to " +
+                                 f"{len(available_peripherals) - 1}: "))
             addr = available_peripherals[selected]
             print(f"\n connecting to addr: {addr}")
             self.set_up_glove(addr)
@@ -229,7 +232,8 @@ class SmartGloveSS:
                 elif (self.TrainingData.is_calibrating == False and
                       self.TrainingData.is_complete == False):
                     time_left = time.time() - old
-                    d, _ = self.process_angles(self.training_targets[index + 1])  # ignore fingers when calibrating
+                    # ignore fingers when calibrating
+                    d, _ = self.process_angles(self.training_targets[index+1])
                     self.publish_capacitance(calibrate=True, digits=d)
                     rospy.loginfo(f"renewing recording in {time_left}")
                     if time_left > 5:

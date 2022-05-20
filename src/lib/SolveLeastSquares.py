@@ -13,7 +13,8 @@ class SolveLeastSquares:
     TODO: ensure the Single Responsibility principle is obeyed.
 
     Attributes:
-        ACTIVE_SENSORS: a numpy array representing the sensors that correspond to
+        ACTIVE_SENSORS:
+            a numpy array representing the sensors that correspond to
             each digit.
         TODO: change to boolean array
     """
@@ -42,7 +43,8 @@ class SolveLeastSquares:
                 and each sample contains the capacitance data from the glove
             target_data: 
                 a numpy array of integers. Each row is a sample
-                corresponding to input_data and contains the target angles per joint
+                corresponding to input_data and contains the target angles per
+                joint
 
         Returns:
             A list containing the coefficients and intercept of the calculated
@@ -80,8 +82,8 @@ class SolveLeastSquares:
                              theta: List) -> np.ndarray:
         """Transforms capacitance data into the angle of each joint.
 
-        Takes in capacitance data and theta values, then uses matrix multiplication
-        to output the angle of each joint.
+        Takes in capacitance data and theta values, then uses matrix
+        multiplication to output the angle of each joint.
 
         Args:
             input_data: 
