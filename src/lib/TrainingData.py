@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Encapsulates the training data."""
 import numpy as np
-from .SolveLeastSquares import SolveLeastSquares
+from lib import SolveLeastSquares
 
 class TrainingData:
     """Handles the training of the gesture recognition models.
@@ -10,7 +10,7 @@ class TrainingData:
     to a solver to train the required models.
 
     Attributes:
-        SOLVER:
+        Solver:
             A regression line calculator.
         TRAINING_TARGETS: 
             A numpy array of integers where each row represents 
@@ -53,7 +53,7 @@ class TrainingData:
         """Constructor for a TrainingData instance"""
 
         # constants
-        self.SOLVER = SolveLeastSquares()
+        self.Solver = SolveLeastSquares.SolveLeastSquares()
         self.TRAINING_TARGETS = np.array([
                 [0, -5, -90, -90, -90, -90],  # Close fist
                 [0, -45, -90, -90, -90, -90],  # Thumb up 45 deg
@@ -154,7 +154,7 @@ class TrainingData:
         else:
             print('Done recording')
             self.is_complete = True
-            self.mtheta = self.SOLVER.solve(self.inputs, self.targets)
+            self.mtheta = self.Solver.solve(self.inputs, self.targets)
 
 
     
