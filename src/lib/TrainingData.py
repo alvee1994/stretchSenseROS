@@ -50,7 +50,7 @@ class TrainingData:
     """
 
     def __init__(self):
-        """Constructor for a TrainingData instance"""
+        """Constructor for a TrainingData instance."""
 
         # constants
         self.Solver = SolveLeastSquares.SolveLeastSquares()
