@@ -1,4 +1,5 @@
 """Handler for StretchSense Peripherals using Bluetooth."""
+"""TODO: Left glove in _get_glove"""
 
 from typing import List, Dict, Optional
 import numpy as np
@@ -59,7 +60,6 @@ class BluetoothHandler:
     
     def _get_glove(self, address: str) -> ssp.StretchSensePeripheral:
         """Creates a glove object corresponding to the given address."""
-        """TODO: Left glove"""
 
         if address in self._known_peripherals.keys():
             if self._known_peripherals[address] == "left_glove":
