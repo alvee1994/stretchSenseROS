@@ -4,8 +4,8 @@
 from typing import List, Dict, Optional
 import numpy as np
 from bluepy import btle
-from glove import stretchsense_delegate as ssd
-from glove import stretchsense_peripheral as ssp
+from peripheral import stretchsense_delegate as ssd
+from peripheral import stretchsense_peripheral as ssp
 import yaml
 
 class BluetoothHandler:

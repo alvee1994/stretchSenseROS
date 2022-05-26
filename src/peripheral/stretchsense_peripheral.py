@@ -1,21 +1,29 @@
 """Classes that encapsulate a single Stretchsense peripheral."""
 """TODO: Left glove"""
+"""TODO: try setting up abstract property for active sensors"""
 
 from bluepy import btle
 from abc import ABC, abstractmethod
 import numpy as np
-from glove import stretchsense_delegate
+from peripheral import stretchsense_delegate
 from typing import Optional, List
 
 class StretchSensePeripheral(btle.Peripheral, ABC):
-    """An abstract class providing a blueprint for concrete peripherals."""
+    """An abstract class providing a blueprint for concrete peripherals.
+    
+    Attributes:
+        ACTIVE_SENSORS:
+            A numpy array representing the sensors that represent each joint.
+        NUM_SENSORS:
+            An integer representing the number of sensors on the glove.
+    """
 
     def __init__(self, address: str, pkg_directory: str):
         super().__init__(address, "random")
         self._pkg_directory: str = pkg_directory
         self._SERVICE_UUID: str
-        self._ACTIVE_SENSORS: np.ndarray
-        self._NUM_SENSORS: int
+        self.ACTIVE_SENSORS: np.ndarray
+        self.NUM_SENSORS: int
         self._delegate = stretchsense_delegate.StretchSenseDelegate()
         self._address: str = address
 
@@ -62,7 +70,7 @@ class RightStretchSenseGlove(StretchSensePeripheral):
 
         # Set up constants
         self._SERVICE_UUID: str = '00001701-7374-7265-7563-6873656e7365'
-        self._ACTIVE_SENSORS: np.ndarray = np.array([
+        self.ACTIVE_SENSORS: np.ndarray = np.array([
             [1, 1, 0, 1, 0, 0, 0, 0], # thumb
             [0, 1, 1, 1, 0, 0, 0, 0], # thumb
             [0, 0, 0, 0, 1, 0, 0, 0], # index
@@ -70,7 +78,7 @@ class RightStretchSenseGlove(StretchSensePeripheral):
             [0, 0, 0, 0, 0, 0, 1, 0], # ring
             [0, 0, 0, 0, 0, 0, 0, 1]  # pinky
         ])
-        self._NUM_SENSORS: int = 7
+        self.NUM_SENSORS: int = 7
 
     def get_default_theta_path(self) -> str:
         """Gets the file path to the default theta values.

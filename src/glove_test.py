@@ -1,5 +1,5 @@
 import rospy, rospkg
-from glove import bluetooth_handler
+from peripheral import bluetooth_handler
 rospack = rospkg.RosPack()
 
 if __name__ == "__main__":
