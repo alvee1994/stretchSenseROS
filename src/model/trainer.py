@@ -11,6 +11,16 @@ class Trainer:
     which stores data until all the training is complete, then the data is
     passed to the Solver, which generates the theta values. Then, those values
     are used to update the Model.
+
+    Attributes:
+        TRAINING_TARGETS:
+            A numpy array representing the target angles for each gesture.
+        is_calibrating:
+            A boolean indicating whether calibration is underway.
+        is_complete:
+            A boolean indicating whether calibration is complete.
+        gesture_index:
+            An integer representing the gesture being trained currently.
     """
 
     def __init__(self, model: model.Model):
@@ -19,7 +29,7 @@ class Trainer:
 
         # Constants
         self._SAMPLES_PER_POSITION : int = 100
-        self._TRAINING_TARGETS: np.ndarray = np.array([
+        self.TRAINING_TARGETS: np.ndarray = np.array([
             [0, -5, -90, -90, -90, -90],  # Close fist
             [0, -45, -90, -90, -90, -90],  # Thumb up 45 deg
             [0, -45, -90, -90, -90, 0],  # Thumb up, pinky out
@@ -31,20 +41,20 @@ class Trainer:
             [0, 0, 0, 0, 0, 0],  # Thumb 0 0
             [-45, 30, -90, -90, -90, -90]  # Thumb over fist
         ])
-        self._NUM_GESTURES: int = self._TRAINING_TARGETS.shape[0]
-        self._NUM_OUTPUTS: int = self._TRAINING_TARGETS.shape[1]
+        self._NUM_GESTURES: int = self.TRAINING_TARGETS.shape[0]
+        self._NUM_OUTPUTS: int = self.TRAINING_TARGETS.shape[1]
         self._NUM_SAMPLES: int = (self._SAMPLES_PER_POSITION
                                   * self._NUM_GESTURES)
         self._NUM_SENSORS: int = self._model.get_num_sensors()
 
         # Flags
-        self._is_calibrating: bool = True
-        self._is_complete: bool = False
+        self.is_calibrating: bool = True
+        self.is_complete: bool = False
 
         # indices
-        self._gesture_index = 0
-        self._repetition_index = 0
-        self._sample_index = 0
+        self.gesture_index: int = 0
+        self._repetition_index: int = 0
+        self._sample_index: int = 0
 
         # Input and target matrices to be solved
         self._inputs: np.ndarray = np.zeros((self._NUM_SAMPLES,
@@ -54,7 +64,7 @@ class Trainer:
 
         # Helper variables
         self._prev_input: np.ndarray = np.zeros(self._NUM_SENSORS)
-        self._curr_target: np.ndarray = self._TRAINING_TARGETS[0]
+        self._curr_target: np.ndarray = self.TRAINING_TARGETS[0]
 
 
     def update_sample(self, curr_input: np.ndarray) -> None:
@@ -69,7 +79,7 @@ class Trainer:
                 data.
         """
         
-        if self._is_complete:
+        if self.is_complete:
             return
 
         if np.array_equal(curr_input, self._prev_input):
@@ -77,7 +87,7 @@ class Trainer:
             return
         else:
             self._prev_input = curr_input
-            if self._is_calibrating:
+            if self.is_calibrating:
                 self._inputs[self._sample_index][0] = 1
                 self._inputs[self._sample_index][1:] = np.array(curr_input)
                 self._targets[self._sample_index] = self._curr_target
@@ -88,7 +98,7 @@ class Trainer:
                     # Update to new position
                     self._update_gesture()
                     # Reset Flags
-                    self._is_calibrating = False
+                    self.is_calibrating = False
                     # Reset counter
                     self._repetition_index = 0
         
@@ -99,18 +109,18 @@ class Trainer:
         inputs matrix and increments the required indices. 
         """
 
-        if self._is_complete:
+        if self.is_complete:
             return
 
-        self._gesture_index += 1
+        self.gesture_index += 1
         
-        if self._gesture_index < self._NUM_GESTURES:
-            self._curr_target = self._TRAINING_TARGETS[self._gesture_index]
+        if self.gesture_index < self._NUM_GESTURES:
+            self._curr_target = self.TRAINING_TARGETS[self.gesture_index]
             print('next position in 5 seconds')
 
         else:
             print('Done recording')
-            self._is_complete = True
+            self.is_complete = True
             result = self._solver.solve(self._inputs,
                                         self._targets,
                                         self._model.get_active_sensors)

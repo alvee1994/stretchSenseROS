@@ -89,3 +89,8 @@ class Model:
     def update_theta(self, new_theta: np.ndarray) -> None:
         """Updates self.theta."""
         self._theta = new_theta
+
+    def save_theta(self, filepath: str) -> None:
+        df = pd.DataFrame(self._theta)
+        df.to_csv(filepath, index=False, header=False)
+        print("saved new model")

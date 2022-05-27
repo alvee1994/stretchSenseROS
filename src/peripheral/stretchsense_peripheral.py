@@ -44,7 +44,7 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
         self.writeCharacteristic(handle + 1, b'\x01\x00')  # turn on notifications
         self.writeCharacteristic(29, b'\x5a')  # change sampling rate to 90Hz
         
-    def read_sensors(self) -> Optional[List]:
+    def read_sensors(self) -> Optional[np.ndarray]:
         """Gets a sample of capacitance data.
 
         Waits for the glove to send a sample of capacitance data with a timeout
