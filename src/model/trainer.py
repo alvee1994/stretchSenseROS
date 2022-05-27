@@ -1,7 +1,6 @@
 """Classes for training the linear regression models."""
 
 import numpy as np
-from peripheral import stretchsense_peripheral as ssp
 from model import model, solver
 
 class Trainer:

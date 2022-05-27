@@ -1,6 +1,5 @@
 """Classes that encapsulate a single Stretchsense peripheral."""
 """TODO: Left glove"""
-"""TODO: try setting up abstract property for active sensors"""
 
 from bluepy import btle
 from abc import ABC, abstractmethod
@@ -20,10 +19,10 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
 
     def __init__(self, address: str, pkg_directory: str):
         super().__init__(address, "random")
-        self._pkg_directory: str = pkg_directory
-        self._SERVICE_UUID: str
         self.ACTIVE_SENSORS: np.ndarray
         self.NUM_SENSORS: int
+        self._pkg_directory: str = pkg_directory
+        self._SERVICE_UUID: str
         self._delegate = stretchsense_delegate.StretchSenseDelegate()
         self._address: str = address
 
@@ -59,7 +58,7 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
 
         if self.waitForNotifications(1.0):
             cap = self._delegate.get_capacitance()
-            if len(cap) == self._NUM_SENSORS:
+            if len(cap) == self.NUM_SENSORS:
                 return cap
             
 class RightStretchSenseGlove(StretchSensePeripheral):

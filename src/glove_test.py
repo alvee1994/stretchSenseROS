@@ -1,4 +1,4 @@
-import rospy, rospkg
+import rospkg
 from peripheral import bluetooth_handler
 rospack = rospkg.RosPack()
 
