@@ -57,9 +57,22 @@ class LeastSquaresSolver:
                      input_data: np.ndarray,
                      index: int,
                      active_sensors: np.ndarray) -> np.ndarray:
-        """Cleans the input data for regression."""
+        """Cleans the input data for regression.
+        
+        Filters away the non active sensors, then pads zero columns such that
+        the output always has 3 columns.
+
+        Args:
+            input_data:
+                A numpy array containing the input data for training.
+            index:
+                An integer representing the gesture currently being trained.
+            active_sensors:
+                A numpy array representing the peripheral's active sensors.
+        """
 
         idx = np.nonzero(active_sensors[index])
+        """TODO: this flatten and reshape may be useless"""
         cleaned_input = input_data[:,idx].flatten().reshape(
                 input_data.shape[0], -1)
         cols = cleaned_input.shape[-1]

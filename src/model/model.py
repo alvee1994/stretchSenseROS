@@ -79,18 +79,26 @@ class Model:
         return result
 
     def get_num_sensors(self) -> int:
-        """Gets the number of sensors of the connected Peripheral."""
+        """Getter for the number of sensors of the connected Peripheral."""
         return self._peripheral.NUM_SENSORS
 
     def get_active_sensors(self) -> np.ndarray:
-        """Gets the active sensors from the Peripheral."""
+        """Getter for the active sensors from the Peripheral."""
         return self._peripheral.ACTIVE_SENSORS
 
     def update_theta(self, new_theta: np.ndarray) -> None:
-        """Updates self.theta."""
+        """Setter for self.theta."""
         self._theta = new_theta
 
     def save_theta(self, filepath: str) -> None:
+        """Saves the theta values to the given filepath.
+        
+        Saves self.theta as a new csv file in the given filepath.
+
+        Args:
+            filepath:
+                The director where the new theta csv file is to be stored.
+        """
         df = pd.DataFrame(self._theta)
         df.to_csv(filepath, index=False, header=False)
         print("saved new model")

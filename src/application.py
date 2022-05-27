@@ -33,37 +33,49 @@ class ROSHandler:
         self._trainer: trainer.Trainer
 
         # For publishing to ROS
-        self.JointPublisher = rospy.Publisher('/joint_states',
-                                              JointState,
-                                              queue_size=2)
-        self.FingerPublisher = rospy.Publisher('/Fingers',
-                                               ssCap,
-                                               queue_size=2)
-        self.Joints = JointState()
-        self.Fingers = ssCap()
-        self.Rate = rospy.Rate(200)
-        self.Joints.header.frame_id = "ssFingers"
-        self.Joints.name = ["metacarpal_thumb_splay_2", "thumb_meta_prox",
-                            "thumb_prox_inter", "metacarpal_index", "index_prox_inter",
-                            "index_inter_dist", "metacarpal_middle",
-                            "middle_prox_inter",
-                            "middle_inter_dist", "metacarpal_ring",
-                            "ring_prox_inter", "ring_inter_dist", "metacarpal_pinky",
-                            "pinky_prox_inter", "pinky_inter_dist"]
+        self._joint_publisher = rospy.Publisher('/Joints',
+                                                JointState,
+                                                queue_size=2)
+        self._finger_publisher = rospy.Publisher('/Fingers',
+                                                 ssCap,
+                                                 queue_size=2)
+        self._joint_states = JointState()
+        self._finger_states = ssCap()
+        self._rate = rospy.Rate(200)
+        self._joint_states.header.frame_id = "ssFingers"
+        self._joint_states.name = [
+            "metacarpal_thumb_splay_2", "thumb_meta_prox",
+            "thumb_prox_inter", "metacarpal_index", "index_prox_inter",
+            "index_inter_dist", "metacarpal_middle",
+            "middle_prox_inter",
+            "middle_inter_dist", "metacarpal_ring",
+            "ring_prox_inter", "ring_inter_dist", "metacarpal_pinky",
+            "pinky_prox_inter", "pinky_inter_dist"
+        ]
 
     def connect(self) -> None:
         """Connect to peripheral and set up publisher."""
+
         glove = self._bluetooth_handler.connect_glove()
         if glove:
-            self.Joints.name = [glove.get_side()
+            self._joint_states.name = [glove.get_side()
                                 + "_"
-                                + name for name in self.Joints.name]
+                                + name for name in self._joint_states.name]
             self._glove = glove
             self._model = model.Model(self._glove)
             self._trainer = trainer.Trainer(self._model)
 
     def requires_calibration(self) -> bool:
-        """Check if the peripheral needs to be calibrated."""
+        """Check if the peripheral needs to be calibrated.
+        
+        Attempts to load theta values in self._model, if no values are found,
+        or user chooses to calibrate again, return True. Else return False.
+
+        Returns:
+            True if calibration is required.
+            False otherwise.
+        """
+
         return not self._model.find_model()
 
     def _process_angles(self,
@@ -74,14 +86,14 @@ class ROSHandler:
         degrees and reformats it into vectors that can be published.
 
         Args:
-            joint_angles:
+            angle_data:
                 A numpy array containing the angle of the 6 measured joints in
                 degrees
         
         Returns:
             A tuple containing 2 lists, one containing data to be published
-            by JointPublisher, and another containing data to be published
-            by FingerPublisher, where the data is in radians.
+            by _joint_publisher, and another containing data to be published
+            by _finger_publisher, where the data is in radians.
         """
 
         # convert to radians for joint state
@@ -111,10 +123,10 @@ class ROSHandler:
         """
 
         joints, _ = self._process_angles(target_angles)
-        self.Joints.header.seq += 1
-        self.Joints.header.stamp = rospy.Time.now()
-        self.Joints.position = joints
-        self.JointPublisher.publish(self.Joints)
+        self._joint_states.header.seq += 1
+        self._joint_states.header.stamp = rospy.Time.now()
+        self._joint_states.position = joints
+        self._joint_publisher.publish(self._joint_states)
 
     def publish_input(self) -> None:
         """Publishes the user's input.
@@ -123,19 +135,19 @@ class ROSHandler:
         the joint and finger data.
         """
         while not rospy.is_shutdown():
-            self.Joints.header.seq += 1
-            self.Joints.header.stamp = rospy.Time.now()
+            self._joint_states.header.seq += 1
+            self._joint_states.header.stamp = rospy.Time.now()
             sensor_data = self._glove.read_sensors()
             if not sensor_data:
                 return
             sensor_data = np.insert(sensor_data, 0, 1)
             transformed = self._model.apply_transformation(sensor_data)
             joints, fingers = self._process_angles(transformed)
-            self.Joints.position = joints
-            self.Fingers.values = fingers
-            self.JointPublisher.publish(self.Joints)
-            self.FingerPublisher.publish(self.Fingers)
-            self.Rate.sleep()
+            self._joint_states.position = joints
+            self._finger_states.values = fingers
+            self._joint_publisher.publish(self._joint_states)
+            self._finger_publisher.publish(self._finger_states)
+            self._rate.sleep()
 
     def calibrate(self) -> None:
         """Calibrates the glove.
@@ -174,9 +186,11 @@ class ROSHandler:
                              + ".csv")
                 self._model.save_theta(filepath)
 
-            self.Rate.sleep()
+            self._rate.sleep()
 
 def main() -> None:
+    """The main application process."""
+
     rospy.init_node('stretchsenseCAP', anonymous=True)
     ros_handler = ROSHandler()
 
