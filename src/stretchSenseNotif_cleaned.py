@@ -394,6 +394,7 @@ class SmartGloveSS:
                     transformed = self.Solver.apply_transformation(sensor_data,
                         self.TrainingData.mtheta)
                     joints, fingers = self.process_angles(transformed)
+                    print(joints)
                     self.Joints.position = joints
                     self.Fingers.values = fingers
                     self.JointPublisher.publish(self.Joints)

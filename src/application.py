@@ -33,10 +33,10 @@ class ROSHandler:
         self._trainer: trainer.Trainer
 
         # For publishing to ROS
-        self._joint_publisher = rospy.Publisher('/Joints',
+        self._joint_publisher = rospy.Publisher('/joint_states',
                                                 JointState,
                                                 queue_size=2)
-        self._finger_publisher = rospy.Publisher('/Fingers',
+        self._finger_publisher = rospy.Publisher('/fingers',
                                                  ssCap,
                                                  queue_size=2)
         self._joint_states = JointState()
@@ -53,8 +53,13 @@ class ROSHandler:
             "pinky_prox_inter", "pinky_inter_dist"
         ]
 
-    def connect(self) -> None:
-        """Connect to peripheral and set up publisher."""
+    def connect(self) -> bool:
+        """Connect to peripheral and set up publisher.
+        
+        Returns:
+            True if peripheral can be connected to.
+            False otherwise
+        """
 
         glove = self._bluetooth_handler.connect_glove()
         if glove:
@@ -64,6 +69,9 @@ class ROSHandler:
             self._glove = glove
             self._model = model.Model(self._glove)
             self._trainer = trainer.Trainer(self._model)
+            return True
+        else:
+            return False
 
     def requires_calibration(self) -> bool:
         """Check if the peripheral needs to be calibrated.
@@ -97,7 +105,7 @@ class ROSHandler:
         """
 
         # convert to radians for joint state
-        angles_in_rad = [angle * self.TO_RAD for angle in angle_data]
+        angles_in_rad = [angle * self._TO_RAD for angle in angle_data]
         [splay2, thumb, index, middle, ring, pinky] = angles_in_rad
         joints = [splay2, thumb, 0, index, index, index, middle, middle, 
                   middle, ring, ring, ring, pinky, pinky, pinky]
@@ -134,12 +142,13 @@ class ROSHandler:
         Reads sensor data, processes it, then publishes
         the joint and finger data.
         """
+
         while not rospy.is_shutdown():
             self._joint_states.header.seq += 1
             self._joint_states.header.stamp = rospy.Time.now()
             sensor_data = self._glove.read_sensors()
-            if not sensor_data:
-                return
+            if sensor_data is None:
+                continue
             sensor_data = np.insert(sensor_data, 0, 1)
             transformed = self._model.apply_transformation(sensor_data)
             joints, fingers = self._process_angles(transformed)

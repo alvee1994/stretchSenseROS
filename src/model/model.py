@@ -65,16 +65,16 @@ class Model:
             A numpy array containing the angles of each joint.
         """
 
-        result = np.zeros(len(self.theta))
+        result = np.zeros(len(self._theta))
         cleaned_input = np.ones((len(input_data), 4))
 
-        for i in range(len(self.theta)): 
+        for i in range(len(self._theta)): 
             idx = np.nonzero(self._peripheral.ACTIVE_SENSORS[i])
             filtered_input = [x for x in input_data[idx]]
             for n in range(len(filtered_input)):
                 cleaned_input[i][n] = filtered_input[n]
 
-            result[i] = np.dot(self.theta[i], cleaned_input[i])
+            result[i] = np.dot(self._theta[i], cleaned_input[i])
 
         return result
 
