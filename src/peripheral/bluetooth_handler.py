@@ -1,5 +1,4 @@
 """Handler for StretchSense Peripherals using Bluetooth."""
-"""TODO: Left glove in _get_glove"""
 
 from typing import List, Dict, Optional
 import numpy as np
@@ -13,10 +12,9 @@ class BluetoothHandler:
     def __init__(self, pkg_directory: str):
         self._pkg_directory: str = pkg_directory
 
-        """TODO: knownperipherals filename"""
         # get name of known peripherals from yaml file
         known_peripherals_yaml = open(self._pkg_directory + 
-                                      "/src/data/known_peripherals_copy.yaml")
+                                      "/src/data/known_peripherals.yaml")
         self._known_peripherals: Dict = yaml.load(known_peripherals_yaml,
                                                   Loader=yaml.FullLoader)
 
@@ -65,7 +63,7 @@ class BluetoothHandler:
             if self._known_peripherals[address] == "left_glove":
                 # JUST A PLACEHOLDER UNTIL I WRITE THE LEFT GLOVE
                 print("\n Left Glove detected.")
-                return ssp.RightStretchSenseGlove(address, self._pkg_directory)
+                return ssp.LeftStretchSenseGlove(address, self._pkg_directory)
             elif self._known_peripherals[address] == "right_glove":
                 print("\n Right Glove detected.")
                 return ssp.RightStretchSenseGlove(address, self._pkg_directory)
@@ -75,7 +73,7 @@ class BluetoothHandler:
             side = input("\n Is this a right or left handed glove? R/L: ")
             if side in ["l", "left"]:
                 # JUST A PLACEHOLDER UNTIL I WRITE THE LEFT GLOVE
-                return ssp.RightStretchSenseGlove(address, self._pkg_directory)
+                return ssp.LeftStretchSenseGlove(address, self._pkg_directory)
             elif side in ["r", "right"]:
                 return ssp.RightStretchSenseGlove(address, self._pkg_directory)
             else:

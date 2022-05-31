@@ -101,4 +101,4 @@ class Model:
         """
         df = pd.DataFrame(self._theta)
         df.to_csv(filepath, index=False, header=False)
-        print("saved new model")
+        print(f"saved new model at {filepath}")

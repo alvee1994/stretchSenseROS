@@ -8,6 +8,11 @@ class StretchSenseDelegate(btle.DefaultDelegate):
     
     This class handles the notifications sent from the glove via Bluetooth
     Low Energy.
+
+    Attributes:
+        capacitance:
+            A numpy array used to store the capacitance data read from the
+            stretchsense peripheral.
     """
 
     def __init__(self):
@@ -33,8 +38,3 @@ class StretchSenseDelegate(btle.DefaultDelegate):
                                for i in range(0, len(hex_vals), 4)])
         capacitance = split_vals[split_vals != 0]
         self.capacitance = capacitance
-
-    def get_capacitance(self) -> Optional[List]:
-        """Gets the updated capacitance values."""
-        if self.capacitance is not None:
-            return self.capacitance

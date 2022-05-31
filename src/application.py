@@ -1,11 +1,9 @@
 """The main application script."""
 
 import time
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 import numpy as np
 import math
-
-import pandas as pd
 
 import rospy, rospkg
 from sensor_msgs.msg import JointState
@@ -63,7 +61,7 @@ class ROSHandler:
 
         glove = self._bluetooth_handler.connect_glove()
         if glove:
-            self._joint_states.name = [glove.get_side()
+            self._joint_states.name = [glove.SIDE
                                 + "_"
                                 + name for name in self._joint_states.name]
             self._glove = glove
@@ -119,18 +117,17 @@ class ROSHandler:
 
         return joints, fingers
         
-    def _publish_target(self, target_angles: np.ndarray) -> None:
+    def _publish_target(self, joints: np.ndarray) -> None:
         """Publishes target angles during calibration for user to follow.
         
-        Takes in a numpy array of target angles, processes them, then publishes
-        the joint data.
+        Takes in a numpy array of 15 joint angles and publishes the joint
+        data to ROS.
         
         Args:
-            target_angles:
-                numpy array representing each finger's angles in degrees
+            joints:
+                A numpy array representing each joint angle in radians.
         """
 
-        joints, _ = self._process_angles(target_angles)
         self._joint_states.header.seq += 1
         self._joint_states.header.stamp = rospy.Time.now()
         self._joint_states.position = joints
@@ -166,13 +163,13 @@ class ROSHandler:
         """
         while not rospy.is_shutdown():
             sensor_data = self._glove.read_sensors()
-            if not sensor_data:
-                return
+            if sensor_data is None:
+                continue
             
             if self._trainer.is_calibrating:
                     old = time.time()
                     index = self._trainer.gesture_index
-                    joints, _ = self.process_angles(
+                    joints, _ = self._process_angles(
                         self._trainer.TRAINING_TARGETS[index])
                     self._publish_target(joints)
                     self._trainer.update_sample(sensor_data)
@@ -189,11 +186,15 @@ class ROSHandler:
                     self._trainer.is_calibrating = True
 
             elif self._trainer.is_complete:
-                filepath = (self.PACKAGE_DIRECTORY
-                             + "/src/data/theta_"
-                             + str(rospy.Time.now())
-                             + ".csv")
+                filepath = (ROSHandler._PACKAGE_DIRECTORY
+                            + "/src/data/theta_"
+                            + self._glove.SIDE
+                            + "_"
+                            + str(rospy.Time.now())
+                            + ".csv")
                 self._model.save_theta(filepath)
+                self._rate.sleep()
+                break
 
             self._rate.sleep()
 

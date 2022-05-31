@@ -94,7 +94,7 @@ class Trainer:
 
                 self._sample_index += 1
                 self._repetition_index += 1
-                if self._repetition_index >= self.SAMPLES_PER_POSITION:
+                if self._repetition_index >= self._SAMPLES_PER_POSITION:
                     # Update to new position
                     self._update_gesture()
                     # Reset Flags
@@ -123,5 +123,5 @@ class Trainer:
             self.is_complete = True
             result = self._solver.solve(self._inputs,
                                         self._targets,
-                                        self._model.get_active_sensors)
+                                        self._model.get_active_sensors())
             self._model.update_theta(result)
