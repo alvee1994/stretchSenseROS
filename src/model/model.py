@@ -5,13 +5,23 @@ import time
 import numpy as np
 import pandas as pd
 from peripheral import stretchsense_peripheral as ssp
-from typing import List
 
 class Model:
-    """Encapsulates a training model."""
+    """Encapsulates a training model.
+    
+    This class handles the conversion from a particular peripheral's
+    capacitance data to joint angle data for publishing.
+
+    Args:
+        peripheral:
+            The peripheral the model is calibrated for.
+    """
 
     def __init__(self, peripheral: ssp.StretchSensePeripheral):
+        # The peripheral the model is calibrated for
         self._peripheral: ssp.StretchSensePeripheral = peripheral
+
+        # The theta values used for conversion
         self._theta: np.ndarray
 
     def find_model(self) -> bool:
@@ -26,14 +36,23 @@ class Model:
             False if calibration is required, and
             True otherwise.
         """
+
         if os.path.isfile(self._peripheral.get_default_theta_path()):
+            # If the peripheral's default theta filepath is valid
+
+            # Prompt user if they want to recalibrate
             cal = input('Found an old model file. \nCalibrate again? Y/N ')
             if cal in ['Y', 'y', 'yes', 'Yes']:
+                # If calibration is required
                 return False
             else:
+                # If calibration not required
+
+                # Load the theta values from the file path
                 self._load_theta()
                 return True
         else:
+            # If the filepath is invalid (i.e. no default theta)
             print('Getting ready to Calibrate in 5 secs')
             time.sleep(5)
             return False
@@ -41,9 +60,12 @@ class Model:
     def _load_theta(self) -> None:
         """Loads data from the default file to mtheta."""
 
+        # Gets the data from the csv
         default_theta = pd.read_csv(self._peripheral.get_default_theta_path(),
                                     sep=',',
                                     header=None)
+        
+        # Update local theta
         self._theta = default_theta.values
 
     def apply_transformation(self,
@@ -65,12 +87,17 @@ class Model:
             A numpy array containing the angles of each joint.
         """
 
+        # Preparing numpy arrays to contain the result and input
         result = np.zeros(len(self._theta))
         cleaned_input = np.ones((len(input_data), 4))
 
-        for i in range(len(self._theta)): 
+        # Iterate through each theta row
+        for i in range(len(self._theta)):
+            # Filter away inactive sensors
             idx = np.nonzero(self._peripheral.ACTIVE_SENSORS[i])
             filtered_input = [x for x in input_data[idx]]
+
+            # Iterate through samples
             for n in range(len(filtered_input)):
                 cleaned_input[i][n] = filtered_input[n]
 
@@ -80,14 +107,17 @@ class Model:
 
     def get_num_sensors(self) -> int:
         """Getter for the number of sensors of the connected Peripheral."""
+
         return self._peripheral.NUM_SENSORS
 
     def get_active_sensors(self) -> np.ndarray:
         """Getter for the active sensors from the Peripheral."""
+
         return self._peripheral.ACTIVE_SENSORS
 
     def update_theta(self, new_theta: np.ndarray) -> None:
         """Setter for self.theta."""
+
         self._theta = new_theta
 
     def save_theta(self, filepath: str) -> None:
@@ -99,6 +129,10 @@ class Model:
             filepath:
                 The director where the new theta csv file is to be stored.
         """
+
+        # Convert list of theta values to a pandas DataFrame
         df = pd.DataFrame(self._theta)
+
+        # Convert DataFrame to a csv file stored in the given filepath
         df.to_csv(filepath, index=False, header=False)
         print(f"saved new model at {filepath}")

@@ -9,6 +9,12 @@ from typing import Optional
 class StretchSensePeripheral(btle.Peripheral, ABC):
     """An abstract class providing a blueprint for concrete peripherals.
     
+    Args:
+        address:
+            A string representing the Bluetooth address of this Peripheral.
+        pkg_directory:
+            A string representing the filepath to this package.
+
     Attributes:
         ACTIVE_SENSORS:
             A numpy array representing the sensors that represent each joint.
@@ -20,27 +26,47 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
 
     def __init__(self, address: str, pkg_directory: str):
         super().__init__(address, "random")
+
+        # Attributes
         self.ACTIVE_SENSORS: np.ndarray
         self.NUM_SENSORS: int
         self.SIDE: str
+
+        # Filepath to the stretchsense package
         self._pkg_directory: str = pkg_directory
+
+        # The peripheral's service uuid
         self._SERVICE_UUID: str
+
+        # The delegate user to handle notifications from this peripheral
         self._delegate = stretchsense_delegate.StretchSenseDelegate()
+
+        # Bluetooth address of this peripheral
         self._address: str = address
 
     def get_default_theta_path(self) -> str:
+        """Gets the path to the csv file containing the default theta values"""
+
         return self._pkg_directory
 
     def setup(self) -> None:
         """Sets up the glove for data collection."""
 
-        self.withDelegate(self._delegate)
         print(f"connected to {self._address}")
+
+        # Set up delegate
+        self.withDelegate(self._delegate)
+
+        # Getting the handle
         svc = self.getServiceByUUID(self._SERVICE_UUID)
         char = svc.getCharacteristics()[0]
         handle = char.valHandle
-        self.writeCharacteristic(handle + 1, b'\x01\x00')  # turn on notifications
-        self.writeCharacteristic(29, b'\x5a')  # change sampling rate to 90Hz
+
+        # Turn on notifications
+        self.writeCharacteristic(handle + 1, b'\x01\x00')
+
+        # change sampling rate to 90Hz
+        self.writeCharacteristic(29, b'\x5a')
         
     def read_sensors(self) -> Optional[np.ndarray]:
         """Gets a sample of capacitance data.
@@ -55,7 +81,10 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
         """
 
         if self.waitForNotifications(1.0):
+            # Read capacitance values from delegate
             cap = self._delegate.capacitance
+
+            # Return values if it has the correct dimensions
             if len(cap) == self.NUM_SENSORS:
                 return cap
             

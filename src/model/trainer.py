@@ -12,6 +12,10 @@ class Trainer:
     passed to the Solver, which generates the theta values. Then, those values
     are used to update the Model.
 
+    Args:
+        model:
+            The model to be trained by this trainer.
+
     Attributes:
         TRAINING_TARGETS:
             A numpy array representing the target angles for each gesture.
@@ -24,7 +28,10 @@ class Trainer:
     """
 
     def __init__(self, model: model.Model):
+        # Model to be trained
         self._model = model
+
+        # Solver used to find the linear regression line
         self._solver = solver.LeastSquaresSolver()
 
         # Constants
@@ -79,22 +86,37 @@ class Trainer:
                 data.
         """
         
+        # Skip if training is already complete
         if self.is_complete:
             return
 
         if np.array_equal(curr_input, self._prev_input):
+            # Skip if duplicate data is received
             print('no new data received\n')
             return
         else:
+            # If input data is different from previous
+
+            # Update prev
             self._prev_input = curr_input
+
             if self.is_calibrating:
+                # If calibration is underway
+
+                # Update the array of input samples
                 self._inputs[self._sample_index][0] = 1
                 self._inputs[self._sample_index][1:] = np.array(curr_input)
+
+                # Update corresponding targets
                 self._targets[self._sample_index] = self._curr_target
 
+                # Increment pointers
                 self._sample_index += 1
                 self._repetition_index += 1
+
                 if self._repetition_index >= self._SAMPLES_PER_POSITION:
+                    # If enough data collected for this gesture
+
                     # Update to new position
                     self._update_gesture()
                     # Reset Flags
@@ -109,19 +131,33 @@ class Trainer:
         inputs matrix and increments the required indices. 
         """
 
+        # Skip if training is already complete
         if self.is_complete:
             return
 
+        # Increment gesture pointer
         self.gesture_index += 1
         
         if self.gesture_index < self._NUM_GESTURES:
+            # If there are still gestures to be trained
+
+            # Move on to training the next gesture
             self._curr_target = self.TRAINING_TARGETS[self.gesture_index]
             print('next position in 5 seconds')
 
         else:
+            # If there are no more gestures to be trained
+
+            # Print alert
             print('Done recording')
+
+            # Update completion flag
             self.is_complete = True
+
+            # Calculate theta values
             result = self._solver.solve(self._inputs,
                                         self._targets,
                                         self._model.get_active_sensors())
+
+            # Update the model's theta values
             self._model.update_theta(result)

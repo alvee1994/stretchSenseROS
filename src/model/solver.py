@@ -1,8 +1,5 @@
 """Solvers used to find the least squares regression lines for the data."""
 
-from multiprocessing.dummy import active_children
-from bleach import Cleaner
-from cupshelpers import activateNewPrinter
 import numpy as np
 from sklearn import linear_model
 
@@ -72,10 +69,13 @@ class LeastSquaresSolver:
                 A numpy array representing the peripheral's active sensors.
         """
 
+        # Filter out unnecessary sensors and reshape
         idx = np.nonzero(active_sensors[index])
         cleaned_input = input_data[:,idx].flatten().reshape(
                 input_data.shape[0], -1)
         cols = cleaned_input.shape[-1]
+
+        # Pad with zeroes to ensure output always has 3 columns
         return np.pad(cleaned_input,
                       ((0,0),(0,3-cols)),
                       'constant')

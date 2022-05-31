@@ -167,7 +167,7 @@ Visualization Manager:
   Global Options:
     Background Color: 122; 122; 122
     Default Light: true
-    Fixed Frame: left_metacarpal
+    Fixed Frame: right_metacarpal
     Frame Rate: 30
   Name: root
   Tools:

@@ -16,7 +16,6 @@ class StretchSenseDelegate(btle.DefaultDelegate):
     """
 
     def __init__(self):
-        """Constructor for StretchSenseDelegate"""
         super().__init__()
         self.capacitance: np.ndarray
 
@@ -33,8 +32,15 @@ class StretchSenseDelegate(btle.DefaultDelegate):
                 Bytestring data from glove's sensors.
         """
 
+        # Convert the bytestring into hexadecimal
         hex_vals = (binascii.b2a_hex(data))
+
+        # Split into individual integer values
         split_vals = np.array([int(hex_vals[i:i + 4], 16) / 10 
                                for i in range(0, len(hex_vals), 4)])
+
+        # Use numpy array magic to remove all zero entries
         capacitance = split_vals[split_vals != 0]
+
+        # Store values in self.capacitance
         self.capacitance = capacitance

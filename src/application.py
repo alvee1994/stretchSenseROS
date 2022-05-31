@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """The main application script."""
 
 import time
@@ -59,16 +60,20 @@ class ROSHandler:
             False otherwise
         """
 
-        glove = self._bluetooth_handler.connect_glove()
-        if glove:
+        # Connect to a peripheral
+        glove = self._bluetooth_handler.connect_peripheral()
+
+        if glove: # If a glove is found
+            # set up parameters
             self._joint_states.name = [glove.SIDE
-                                + "_"
-                                + name for name in self._joint_states.name]
+                + "_"
+                + name for name in self._joint_states.name]
             self._glove = glove
             self._model = model.Model(self._glove)
             self._trainer = trainer.Trainer(self._model)
+
             return True
-        else:
+        else: # If no glove found
             return False
 
     def requires_calibration(self) -> bool:
@@ -102,19 +107,25 @@ class ROSHandler:
             by _finger_publisher, where the data is in radians.
         """
 
-        # convert to radians for joint state
+        # Convert input to radians
         angles_in_rad = [angle * self._TO_RAD for angle in angle_data]
         [splay2, thumb, index, middle, ring, pinky] = angles_in_rad
+
+        # Get values to be published to joint_publisher
         joints = [splay2, thumb, 0, index, index, index, middle, middle, 
                   middle, ring, ring, ring, pinky, pinky, pinky]
+
+        # Get values to be published to finger_publisher
         fingers = [thumb, index, middle, ring, pinky]
 
+        # Trimming the values to be between -pi/2 and 0
         for i in range(len(joints)):
             if joints[i] > 0:
                 joints[i] = 0
             elif joints[i] < -1.57:
                 joints[i] = -1.57
 
+        # Return the lists as a tuple
         return joints, fingers
         
     def _publish_target(self, joints: np.ndarray) -> None:
@@ -143,12 +154,21 @@ class ROSHandler:
         while not rospy.is_shutdown():
             self._joint_states.header.seq += 1
             self._joint_states.header.stamp = rospy.Time.now()
+
+            # Read data from sensors
             sensor_data = self._glove.read_sensors()
             if sensor_data is None:
+                # If sensor data was invalid and returned None, skip
                 continue
+
+            # Transform capacitance data to get angle data using the model
             sensor_data = np.insert(sensor_data, 0, 1)
             transformed = self._model.apply_transformation(sensor_data)
+
+            # Get the values to be published
             joints, fingers = self._process_angles(transformed)
+
+            # Publish above values
             self._joint_states.position = joints
             self._finger_states.values = fingers
             self._joint_publisher.publish(self._joint_states)
@@ -162,37 +182,60 @@ class ROSHandler:
         and saves a new theta file.
         """
         while not rospy.is_shutdown():
+            # Read sensor data
             sensor_data = self._glove.read_sensors()
             if sensor_data is None:
+                # If sensor data was invalid and returned None, skip
                 continue
             
             if self._trainer.is_calibrating:
+                    # If data for a particular gesture is being collected
+
+                    # Get time
                     old = time.time()
+
+                    # Publish the targets
                     index = self._trainer.gesture_index
                     joints, _ = self._process_angles(
                         self._trainer.TRAINING_TARGETS[index])
                     self._publish_target(joints)
+
+                    # Update the trainer with the sample sensor data
                     self._trainer.update_sample(sensor_data)
                     rospy.loginfo(f"reading: {index}")
 
             elif (not self._trainer.is_calibrating and
                   not self._trainer.is_complete):
+                # If sufficient data was collected for a gesture
+
+                # Get remaining time
                 time_left = time.time() - old
+
+                # Publish the new target
                 joints, _ = self._process_angles(
                     self._trainer.TRAINING_TARGETS[index+1])
                 self._publish_target(joints)
                 rospy.loginfo(f"renewing recording in {time_left}")
+
+                # Begin collecting data
                 if time_left > 5:
                     self._trainer.is_calibrating = True
 
             elif self._trainer.is_complete:
+                # If sufficient data for all gestures have been collected
+
+                # Generate file path
                 filepath = (ROSHandler._PACKAGE_DIRECTORY
                             + "/src/data/theta_"
                             + self._glove.SIDE
                             + "_"
                             + str(rospy.Time.now())
                             + ".csv")
+
+                # Save the theta values stored in model
                 self._model.save_theta(filepath)
+
+                # End the while loop
                 self._rate.sleep()
                 break
 
@@ -201,12 +244,19 @@ class ROSHandler:
 def main() -> None:
     """The main application process."""
 
+    # Initialise ROS node
     rospy.init_node('stretchsenseCAP', anonymous=True)
+
+    # Instantiate a ROSHandler object
     ros_handler = ROSHandler()
 
     if ros_handler.connect():
+        # If a peripheral has been connected to
         if ros_handler.requires_calibration():
+            # If calibration is required, begin calibration
             ros_handler.calibrate()
+        
+        # Publish the peripheral's inputs
         ros_handler.publish_input()
     
 
