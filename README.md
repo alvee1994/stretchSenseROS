@@ -3,7 +3,6 @@
 This package is used to connect to a StretchSense peripheral via Bluetooth and publish its sensor data to the ROS network.
 
 ## Installation
----
 
 ### 1. Inside the `src` folder of your [ROS Workspace](http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment#Create_a_ROS_Workspace) clone with:
 ```
@@ -28,7 +27,6 @@ $ sudo setcap 'cap_net_raw,cap_net_admin+eip' bluepy-helper
 ```
 
 ## Usage
----
 
 ### 1. Start roscore
 ```
