@@ -12,6 +12,7 @@ from stretchsense.msg import ssCap
 
 from peripheral import bluetooth_handler, stretchsense_peripheral
 from model import model, trainer
+from user import user
 
 rospack = rospkg.RosPack()
 
@@ -22,6 +23,9 @@ class ROSHandler:
     _TO_RAD = math.pi / 180
 
     def __init__(self):
+        # The current user 
+        self._user: user.User
+
         # For connecting to peripheral
         self._bluetooth_handler = bluetooth_handler.BluetoothHandler(
             ROSHandler._PACKAGE_DIRECTORY)
@@ -52,6 +56,20 @@ class ROSHandler:
             "pinky_prox_inter", "pinky_inter_dist"
         ]
 
+    def _register_user(self) -> user.User:
+        """Gets the current user.
+        
+        Prompts user for username and returns a User object with the given
+        username.
+
+        Returns:
+            User object where its name attribute is the given username.
+        """
+
+        username = input("Enter username: ")
+        return user.User(username)
+
+
     def connect(self) -> bool:
         """Connect to peripheral and set up publisher.
         
@@ -60,16 +78,21 @@ class ROSHandler:
             False otherwise
         """
 
+        # Get the user
+        self._user = self._register_user()
+        
         # Connect to a peripheral
         glove = self._bluetooth_handler.connect_peripheral()
 
         if glove: # If a glove is found
-            # set up parameters
+            # Set up parameters
             self._joint_states.name = [glove.SIDE
                 + "_"
                 + name for name in self._joint_states.name]
             self._glove = glove
-            self._model = model.Model(self._glove)
+            self._model = model.Model(self._glove,
+                                      self._user,
+                                      self._PACKAGE_DIRECTORY)
             self._trainer = trainer.Trainer(self._model)
 
             return True
@@ -224,16 +247,8 @@ class ROSHandler:
             elif self._trainer.is_complete:
                 # If sufficient data for all gestures have been collected
 
-                # Generate file path
-                filepath = (ROSHandler._PACKAGE_DIRECTORY
-                            + "/src/data/theta_"
-                            + self._glove.SIDE
-                            + "_"
-                            + str(rospy.Time.now())
-                            + ".csv")
-
                 # Save the theta values stored in model
-                self._model.save_theta(filepath)
+                self._model.save_theta()
 
                 # End the while loop
                 self._rate.sleep()

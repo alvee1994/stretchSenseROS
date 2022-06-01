@@ -81,18 +81,18 @@ class BluetoothHandler:
             # Return glove based on name
             if self._known_peripherals[address] == "left_glove":
                 print("\n Left Glove detected.")
-                return ssp.LeftStretchSenseGlove(address, self._pkg_directory)
+                return ssp.LeftStretchSenseGlove(address)
             elif self._known_peripherals[address] == "right_glove":
                 print("\n Right Glove detected.")
-                return ssp.RightStretchSenseGlove(address, self._pkg_directory)
+                return ssp.RightStretchSenseGlove(address)
 
         else: # Peripheral is unknown
             # Prompt user for input and return appropriate glove
             side = input("\n Is this a right or left handed glove? R/L: ")
             if side in ["l", "left"]:
-                return ssp.LeftStretchSenseGlove(address, self._pkg_directory)
+                return ssp.LeftStretchSenseGlove(address)
             elif side in ["r", "right"]:
-                return ssp.RightStretchSenseGlove(address, self._pkg_directory)
+                return ssp.RightStretchSenseGlove(address)
             else:
                 # Prompt again if input is invalid
                 print("\n Error: invalid input")

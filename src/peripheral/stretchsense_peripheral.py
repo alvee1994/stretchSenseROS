@@ -12,8 +12,6 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
     Args:
         address:
             A string representing the Bluetooth address of this Peripheral.
-        pkg_directory:
-            A string representing the filepath to this package.
 
     Attributes:
         ACTIVE_SENSORS:
@@ -24,16 +22,13 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
             A string representing which hand the glove is for.
     """
 
-    def __init__(self, address: str, pkg_directory: str):
+    def __init__(self, address: str):
         super().__init__(address, "random")
 
         # Attributes
         self.ACTIVE_SENSORS: np.ndarray
         self.NUM_SENSORS: int
         self.SIDE: str
-
-        # Filepath to the stretchsense package
-        self._pkg_directory: str = pkg_directory
 
         # The peripheral's service uuid
         self._SERVICE_UUID: str
@@ -43,11 +38,6 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
 
         # Bluetooth address of this peripheral
         self._address: str = address
-
-    def get_default_theta_path(self) -> str:
-        """Gets the path to the csv file containing the default theta values"""
-
-        return self._pkg_directory
 
     def setup(self) -> None:
         """Sets up the glove for data collection."""
@@ -91,8 +81,8 @@ class StretchSensePeripheral(btle.Peripheral, ABC):
 class RightStretchSenseGlove(StretchSensePeripheral):
     """Represents a particular right handed Stretchsense glove."""
 
-    def __init__(self, address: str, pkg_directory: str):
-        super().__init__(address, pkg_directory)
+    def __init__(self, address: str):
+        super().__init__(address)
 
         # Set up constants
         self._SERVICE_UUID: str = '00001701-7374-7265-7563-6873656e7365'
@@ -107,23 +97,12 @@ class RightStretchSenseGlove(StretchSensePeripheral):
         self.NUM_SENSORS: int = 7
         self.SIDE: str = "right"
 
-    def get_default_theta_path(self) -> str:
-        """Gets the file path to the default theta values.
-        
-        Returns:
-            A string containing the file path to the csv file containing
-            the default theta values for this glove.
-        """
-        
-        return (super().get_default_theta_path()
-                + "/src/data/theta_default.csv")
-
 
 class LeftStretchSenseGlove(StretchSensePeripheral):
     """Represents a particular left handed Stretchsense glove."""
 
     def __init__(self, address: str, pkg_directory: str):
-        super().__init__(address, pkg_directory)
+        super().__init__(address)
 
         # Set up constants
         self._SERVICE_UUID: str = '00001701-7374-7265-7563-6873656e7365'
@@ -137,14 +116,3 @@ class LeftStretchSenseGlove(StretchSensePeripheral):
         ])
         self.NUM_SENSORS: int = 7
         self.SIDE: str = "left"
-
-    def get_default_theta_path(self) -> str:
-        """Gets the file path to the default theta values.
-        
-        Returns:
-            A string containing the file path to the csv file containing
-            the default theta values for this glove.
-        """
-        
-        return (super().get_default_theta_path()
-                + "/src/data/theta_default_left.csv")

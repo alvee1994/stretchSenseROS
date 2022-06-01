@@ -5,6 +5,7 @@ import time
 import numpy as np
 import pandas as pd
 from peripheral import stretchsense_peripheral as ssp
+from user import user
 
 class Model:
     """Encapsulates a training model.
@@ -15,19 +16,36 @@ class Model:
     Args:
         peripheral:
             The peripheral the model is calibrated for.
+        user:
+            The user the model is calibrated for
+        pkg_directory:
+            A string representing the path to the working directory
     """
 
-    def __init__(self, peripheral: ssp.StretchSensePeripheral):
-        # The peripheral the model is calibrated for
+    def __init__(self,
+                 peripheral: ssp.StretchSensePeripheral,
+                 user: user.User,
+                 pkg_directory: str):
+        # The peripheral and user the model is calibrated for
         self._peripheral: ssp.StretchSensePeripheral = peripheral
+        self._user: user.User = user
+
+        # The path to the working directory
+        self._pkg_directory: str = pkg_directory
 
         # The theta values used for conversion
         self._theta: np.ndarray
 
+    def _get_theta_path(self) -> str:
+        """Gets the path to the theta file for the peripheral and user."""
+
+        filename = f"theta_{self._user.name}_{self._peripheral.SIDE}.csv"
+        return self._pkg_directory + f"/src/data/{filename}"
+
     def find_model(self) -> bool:
         """Checks if a default theta file exists.
 
-        Checks if the defeault theta file path in self.peripheral has a valid
+        Checks if the default theta file path in self.peripheral has a valid
         file. If it does not, or the user wants to calibrate again, return
         False. Otherwise, load the theta file, update self.theta, then return
         True.
@@ -37,7 +55,7 @@ class Model:
             True otherwise.
         """
 
-        if os.path.isfile(self._peripheral.get_default_theta_path()):
+        if os.path.isfile(self._get_theta_path()):
             # If the peripheral's default theta filepath is valid
 
             # Prompt user if they want to recalibrate
@@ -58,10 +76,10 @@ class Model:
             return False
 
     def _load_theta(self) -> None:
-        """Loads data from the default file to mtheta."""
+        """Loads data from the default file to self._theta."""
 
         # Gets the data from the csv
-        default_theta = pd.read_csv(self._peripheral.get_default_theta_path(),
+        default_theta = pd.read_csv(self._get_theta_path(),
                                     sep=',',
                                     header=None)
         
@@ -120,19 +138,17 @@ class Model:
 
         self._theta = new_theta
 
-    def save_theta(self, filepath: str) -> None:
+    def save_theta(self) -> None:
         """Saves the theta values to the given filepath.
         
         Saves self.theta as a new csv file in the given filepath.
-
-        Args:
-            filepath:
-                The director where the new theta csv file is to be stored.
         """
 
         # Convert list of theta values to a pandas DataFrame
         df = pd.DataFrame(self._theta)
 
         # Convert DataFrame to a csv file stored in the given filepath
-        df.to_csv(filepath, index=False, header=False)
-        print(f"saved new model at {filepath}")
+        df.to_csv(self._get_theta_path(),
+                  index=False,
+                  header=False)
+        print(f"saved new model at {self._get_theta_path()}")
